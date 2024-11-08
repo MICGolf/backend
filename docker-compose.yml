@@ -1,0 +1,38 @@
+services:
+  web:
+    image: nginx:latest
+    container_name: nginx_container
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./etc/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - /etc/ssl/certs:/etc/ssl/certs  # SSL 인증서가 있는 경로
+    depends_on:
+      - app
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile  # FastAPI Dockerfile 경로
+    container_name: fastapi_container
+    command: ["gunicorn", "src.main:app", "-w", "3", "-k", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000"]
+    environment:
+      - PORT=8000
+    volumes:
+      - ./src:/app/src
+    expose:
+      - "8000"
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:latest
+    container_name: redis_container
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+volumes:
+  redis_data:
