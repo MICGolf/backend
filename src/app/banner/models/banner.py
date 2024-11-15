@@ -4,4 +4,4 @@ from tortoise.models import Model
 
 class Banner(Model):
     class Meta:
-        table = 'banner'
+        table = "banner"

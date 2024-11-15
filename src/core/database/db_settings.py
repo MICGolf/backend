@@ -1,10 +1,9 @@
 import os
 
+from dotenv import load_dotenv
 from fastapi import FastAPI
-
 from tortoise import Tortoise
 from tortoise.contrib.fastapi import register_tortoise
-from dotenv import load_dotenv
 
 # 환경변수 .env 로드
 load_dotenv()
@@ -54,4 +53,3 @@ async def database_initialize(app: FastAPI) -> None:
         )
     except Exception as e:
         print(f"Database initialization failed: {e}")
-

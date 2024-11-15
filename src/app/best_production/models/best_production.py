@@ -9,4 +9,4 @@ class BestProduction(Model):
     updated_at = fields.DatetimeField(auto_now=True)
 
     class Meta:
-        table = 'best_production'
+        table = "best_production"
