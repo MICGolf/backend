@@ -4,4 +4,4 @@ from tortoise.models import Model
 
 class Product(Model):
     class Meta:
-        table = 'products'
+        table = 'product'
