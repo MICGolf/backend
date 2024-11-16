@@ -32,7 +32,7 @@ pytest = "^8.3.3"
 
 [tool.aerich]
 tortoise_orm = "core.database.db_settings.TORTOISE_ORM"
-location = "../migrations"
+location = "./migrations"
 src_folder = "./src"
 
 [build-system]

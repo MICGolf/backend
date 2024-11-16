@@ -9,12 +9,15 @@ load_dotenv()
 
 TORTOISE_MODELS = [
     "app.banner.models.banner",
-    "app.best_production.models.best_production",
+    "app.user.models.user",
+    "app.cart.models.cart",
     "app.category.models.category",
-    "app.mds_choice.models.mds_choice",
+    "app.order.models.order",
     "app.product.models.product",
+    "app.promotion_product.models.promotion_product",
     "aerich.models",
 ]
+
 
 TORTOISE_ORM = {
     "connections": {
