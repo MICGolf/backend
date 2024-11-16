@@ -31,9 +31,9 @@ pytest = "^8.3.3"
 
 
 [tool.aerich]
-tortoise_orm = "src.core.database.db_settings.TORTOISE_ORM"
-location = "./migrations"
-src_folder = "./."
+tortoise_orm = "core.database.db_settings.TORTOISE_ORM"
+location = "../migrations"
+src_folder = "./src"
 
 [build-system]
 requires = ["poetry-core"]

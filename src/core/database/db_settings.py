@@ -5,15 +5,14 @@ from fastapi import FastAPI
 from tortoise import Tortoise
 from tortoise.contrib.fastapi import register_tortoise
 
-# 환경변수 .env 로드
 load_dotenv()
 
 TORTOISE_MODELS = [
-    "src.app.banner.models.banner",
-    "src.app.best_production.models.best_production",
-    "src.app.category.models.category",
-    "src.app.mds_choice.models.mds_choice",
-    "src.app.product.models.product",
+    "app.banner.models.banner",
+    "app.best_production.models.best_production",
+    "app.category.models.category",
+    "app.mds_choice.models.mds_choice",
+    "app.product.models.product",
     "aerich.models",
 ]
 

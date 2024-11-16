@@ -1,13 +1,12 @@
 from fastapi import FastAPI
 
+from common.post_construct import post_construct
+
 app = FastAPI()
 
 
-@app.get("/")
-async def root() -> dict[str, str]:
-    return {"message": "Hello World"}
+async def startup_event() -> None:
+    await post_construct(app=app)
 
 
-@app.get("/hello/{name}")
-async def say_hello(name: str) -> dict[str, str]:
-    return {"message": f"Hello {name}"}
+app.add_event_handler("startup", startup_event)
