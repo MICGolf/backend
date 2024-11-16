@@ -340,3 +340,6 @@ $RECYCLE.BIN/
 
 # End of https://www.toptal.com/developers/gitignore/api/python,pycharm+all,macos,windows,linux
 /src/.env
+
+# JetBrains 관련 설정 파일 무시
+.idea/
