@@ -30,6 +30,7 @@ class ProductDTO(BaseModel):
     name: str
     price: float
     discount: float
+    discount_option: str
     origin_price: float
     description: str
     detail: str

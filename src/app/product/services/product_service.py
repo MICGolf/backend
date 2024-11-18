@@ -5,6 +5,7 @@ from typing import List
 
 from fastapi import UploadFile
 
+from app.category.models.category import Category, CategoryProduct
 from app.product.dtos.request import ProductWithOptionCreateRequestDTO
 from app.product.dtos.response import OptionDTO, OptionImageDTO, ProductDTO, ProductResponseDTO
 from app.product.models.product import CountProduct, Option, OptionImage, Product
@@ -12,10 +13,10 @@ from app.product.models.product import CountProduct, Option, OptionImage, Produc
 
 class ProductService:
     @staticmethod
-    async def get_product_with_options(product_code: str) -> ProductResponseDTO:
+    async def get_product_with_options(product_id: int) -> ProductResponseDTO:
         product, options = await asyncio.gather(
-            Product.get_by_product_code(product_code=product_code),
-            Option.get_with_stock_and_images(product_code=product_code),
+            Product.get_by_id(product_id=product_id),
+            Option.get_with_stock_and_images_by_product_id(product_id=product_id),
         )
 
         product_dto = ProductDTO.model_validate(product)
@@ -54,8 +55,12 @@ class ProductService:
         product_dto = product_create_dto.product
         option_dtos = product_create_dto.options
         image_mapping = product_create_dto.image_mapping
+        category_id = product_create_dto.category_id
 
-        product = await Product.create(**product_dto.model_dump())
+        product, category = await asyncio.gather(
+            Product.create(**product_dto.model_dump()),
+            Category.get(id=category_id),
+        )
 
         options_to_create = [
             Option(
@@ -67,7 +72,10 @@ class ProductService:
             for option_dto in option_dtos
             for size_option in option_dto.sizes
         ]
-        await Option.bulk_create(options_to_create)
+
+        await asyncio.gather(
+            CategoryProduct.create(category=category, product=product), Option.bulk_create(options_to_create)
+        )
 
         created_options = await Option.filter(product=product).all()
         option_map = {(opt.color_code, opt.size): opt for opt in created_options}
@@ -84,8 +92,9 @@ class ProductService:
 
         option_image_entries = await cls._process_images(created_options, image_mapping, files, upload_dir)
 
-        await CountProduct.bulk_create(count_products_to_create)
-        await OptionImage.bulk_create(option_image_entries)
+        await asyncio.gather(
+            CountProduct.bulk_create(count_products_to_create), OptionImage.bulk_create(option_image_entries)
+        )
 
     @staticmethod
     async def _process_images(
@@ -115,10 +124,8 @@ class ProductService:
                         os.makedirs(upload_dir, exist_ok=True)
                         file_path = os.path.join(upload_dir, matching_file.filename or "")
 
-                        # Save file
                         with open(file_path, "wb") as f:
                             f.write(await matching_file.read())
 
-                        # Create OptionImage entry
                         option_image_entries.append(OptionImage(option=option, image_url=file_path))
         return option_image_entries
