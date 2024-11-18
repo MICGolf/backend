@@ -4,11 +4,7 @@ from typing import List, Optional
 from fastapi import HTTPException
 
 from app.category.dtos.category_request import CategoryCreateRequest, CategoryUpdateRequest
-from app.category.dtos.category_response import (
-    CategoryDetailResponse,
-    CategoryResponse,
-    CategoryWithSubcategoriesResponse,
-)
+from app.category.dtos.category_response import CategoryResponse, CategoryWithSubcategoriesResponse
 from app.category.models.category import Category
 
 
@@ -20,13 +16,12 @@ class CategoryService:
         return [CategoryResponse.model_validate(category, from_attributes=True) for category in categories]
 
     @staticmethod
-    async def get_category_detail(category_id: int) -> CategoryDetailResponse:
-        category = await Category.get_or_none(id=category_id).prefetch_related("category_product")
+    async def get_category_detail(category_id: int) -> CategoryResponse:
+        category = await Category.get_or_none(id=category_id)
         if not category:
             raise HTTPException(status_code=404, detail="Category not found")
 
-        product_count = await category.category_product.all().count()  # type: ignore
-        return CategoryDetailResponse.model_validate(category, from_attributes=True)
+        return CategoryResponse.model_validate(category, from_attributes=True)
 
     @staticmethod
     async def create_category(request: CategoryCreateRequest) -> CategoryResponse:
