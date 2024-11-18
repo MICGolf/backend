@@ -1,5 +1,10 @@
 /etc
 /htmlcov
+/uploads
+
+# Ignore .env files
+.env
+.env.*
 
 # Created by https://www.toptal.com/developers/gitignore/api/python,pycharm+all,macos,windows,linux
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,pycharm+all,macos,windows,linux
@@ -339,7 +344,7 @@ $RECYCLE.BIN/
 *.lnk
 
 # End of https://www.toptal.com/developers/gitignore/api/python,pycharm+all,macos,windows,linux
-/src/.env
+/src/.env.local
 
 # JetBrains 관련 설정 파일 무시
 .idea/

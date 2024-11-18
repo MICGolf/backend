@@ -8,6 +8,7 @@ class Banner(BaseModel):
     image_url = fields.CharField(max_length=255)
     redirect_url = fields.CharField(max_length=255, null=True)
     is_active = fields.BooleanField(default=True)
+    banner_type = fields.CharField(max_length=10)  # banner, promotion
 
     class Meta:
         table = "banner"

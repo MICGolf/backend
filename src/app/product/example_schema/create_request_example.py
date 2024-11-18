@@ -2,10 +2,12 @@ import json
 
 OPTION_CREATE_SCHEMA = {
     "example": {
-        "size": "Large",
-        "color": "Black",
-        "color_code": "#000000",
-        "stock": 20,
+        "color": "Red",
+        "color_code": "#FF0000",
+        "sizes": [
+            {"size": "M", "stock": 50},
+            {"size": "L", "stock": 30},
+        ],
     }
 }
 
@@ -24,42 +26,64 @@ PRODUCT_CREATE_SCHEMA = {
 PRODUCT_CREATE_REQUEST_SCHEMA = {
     "example": {
         "product": {
-            "name": "믹골프 파우치 2세대",
-            "price": 199.99,
+            "name": "Sample Product",
+            "price": 100.0,
             "discount": 0.1,
-            "origin_price": 249.99,
-            "description": "믹골프의 최신 프리미엄 파우치입니다.",
-            "detail": "2세대 디자인으로, 내구성과 실용성을 모두 갖춘 고급 파우치입니다.",
-            "product_code": "MGP-2NDGEN",
+            "origin_price": 110.0,
+            "description": "A sample product",
+            "detail": "Detailed product description.",
+            "product_code": "SP001",
         },
-        "option": [
-            {"size": "Large", "color": "Black", "color_code": "#000000", "stock": 20},
-            {"size": "Medium", "color": "White", "color_code": "#FFFFFF", "stock": 15},
+        "options": [
+            {
+                "color": "Red",
+                "color_code": "#FF0000",
+                "sizes": [
+                    {"size": "M", "stock": 50},
+                    {"size": "L", "stock": 30},
+                ],
+            },
+            {
+                "color": "Blue",
+                "color_code": "#0000FF",
+                "sizes": [
+                    {"size": "M", "stock": 40},
+                    {"size": "L", "stock": 20},
+                ],
+            },
         ],
         "image_mapping": {
-            "#000000": ["image1.jpg", "image2.jpg"],
-            "#FFFFFF": ["image3.jpg"],
+            "#FF0000": ["image1.jpg", "image2.jpg"],
+            "#0000FF": ["image3.jpg"],
         },
     }
 }
 
 PRODUCT_CREATE_REQUEST_EXAMPLE_SCHEMA = {
     "product": {
-        "name": "믹골프 파우치 2세대",
-        "price": 199.99,
+        "name": "Sample Product",
+        "price": 100.0,
         "discount": 0.1,
-        "origin_price": 249.99,
-        "description": "믹골프의 최신 프리미엄 파우치입니다.",
-        "detail": "2세대 디자인으로, 내구성과 실용성을 모두 갖춘 고급 파우치입니다.",
-        "product_code": "MGP-2NDGEN",
+        "origin_price": 110.0,
+        "description": "A sample product",
+        "detail": "Detailed product description.",
+        "product_code": "SP001",
     },
-    "option": [
-        {"size": "Large", "color": "Black", "color_code": "#000000", "stock": 20},
-        {"size": "Medium", "color": "White", "color_code": "#FFFFFF", "stock": 15},
+    "options": [
+        {
+            "color": "Red",
+            "color_code": "#FF0000",
+            "sizes": [{"size": "M", "stock": 50}, {"size": "L", "stock": 30}],
+        },
+        {
+            "color": "Blue",
+            "color_code": "#0000FF",
+            "sizes": [{"size": "M", "stock": 40}, {"size": "L", "stock": 20}],
+        },
     ],
     "image_mapping": {
-        "#000000": ["image1.jpg", "image2.jpg"],
-        "#FFFFFF": ["image3.jpg"],
+        "#FF0000": ["image1.jpg", "image2.jpg"],
+        "#0000FF": ["image3.jpg"],
     },
 }
 
@@ -76,18 +100,22 @@ PRODUCT_CREATE_DESCRIPTION = (
     '          "detail": "2세대 디자인으로, 내구성과 실용성을 모두 갖춘 고급 파우치입니다.",\n\n'
     '          "product_code": "MGP-2NDGEN"\n\n'
     "      },\n\n"
-    '      "option": [\n\n'
+    '      "options": [\n\n'
     "          {\n\n"
-    "              'size': 'Large',\n\n"
     "              'color': 'Black',\n\n"
     "              'color_code': '#000000',\n\n"
-    "              'stock': 20\n\n"
+    "              'sizes': [\n\n"
+    "                  {'size': 'M', 'stock': 50},\n\n"
+    "                  {'size': 'L', 'stock': 30}\n\n"
+    "              ]\n\n"
     "          },\n\n"
     "          {\n\n"
-    "              'size': 'Medium',\n\n"
     "              'color': 'White',\n\n"
     "              'color_code': '#FFFFFF',\n\n"
-    "              'stock': 15\n\n"
+    "              'sizes': [\n\n"
+    "                  {'size': 'M', 'stock': 40},\n\n"
+    "                  {'size': 'L', 'stock': 20}\n\n"
+    "              ]\n\n"
     "          }\n\n"
     "      ],\n\n"
     '      "image_mapping": {\n\n'
