@@ -7,7 +7,9 @@ from fastapi import APIRouter, Body, File, HTTPException, UploadFile
 from app.product.dtos.request import ProductWithOptionCreateRequestDTO
 from app.product.dtos.response import ProductResponseDTO
 from app.product.example_schema.create_request_example import (
-    PRODUCT_CREATE_DESCRIPTION, PRODUCT_CREATE_REQUEST_EXAMPLE_SCHEMA)
+    PRODUCT_CREATE_DESCRIPTION,
+    PRODUCT_CREATE_REQUEST_EXAMPLE_SCHEMA,
+)
 from app.product.models.product import Option, OptionImage, Product
 from core.configs import settings
 

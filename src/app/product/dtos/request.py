@@ -1,7 +1,10 @@
 from pydantic import BaseModel, Field
 
 from app.product.example_schema.create_request_example import (
-    OPTION_CREATE_SCHEMA, PRODUCT_CREATE_REQUEST_SCHEMA, PRODUCT_CREATE_SCHEMA)
+    OPTION_CREATE_SCHEMA,
+    PRODUCT_CREATE_REQUEST_SCHEMA,
+    PRODUCT_CREATE_SCHEMA,
+)
 
 
 class OptionDTO(BaseModel):
