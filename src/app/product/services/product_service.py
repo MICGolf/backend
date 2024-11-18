@@ -39,9 +39,7 @@ class ProductService:
                 {"size": option.size, "stock": option.stock}  # type: ignore[attr-defined]
             )
 
-        option_dtos = [
-            OptionDTO.model_validate(color) for color in color_options_map.values()
-        ]
+        option_dtos = [OptionDTO.model_validate(color) for color in color_options_map.values()]
 
         return ProductResponseDTO.build(product=product_dto, options=option_dtos)
 
@@ -84,9 +82,7 @@ class ProductService:
             for size_option in option_dto.sizes
         ]
 
-        option_image_entries = await cls._process_images(
-            created_options, image_mapping, files, upload_dir
-        )
+        option_image_entries = await cls._process_images(created_options, image_mapping, files, upload_dir)
 
         await CountProduct.bulk_create(count_products_to_create)
         await OptionImage.bulk_create(option_image_entries)
@@ -117,16 +113,12 @@ class ProductService:
 
                     if matching_file:
                         os.makedirs(upload_dir, exist_ok=True)
-                        file_path = os.path.join(
-                            upload_dir, matching_file.filename or ""
-                        )
+                        file_path = os.path.join(upload_dir, matching_file.filename or "")
 
                         # Save file
                         with open(file_path, "wb") as f:
                             f.write(await matching_file.read())
 
                         # Create OptionImage entry
-                        option_image_entries.append(
-                            OptionImage(option=option, image_url=file_path)
-                        )
+                        option_image_entries.append(OptionImage(option=option, image_url=file_path))
         return option_image_entries
