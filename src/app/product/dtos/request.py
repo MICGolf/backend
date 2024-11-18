@@ -38,6 +38,7 @@ class ProductDTO(BaseModel):
 
 
 class ProductWithOptionCreateRequestDTO(BaseModel):
+    category_id: int
     product: ProductDTO
     options: list[OptionDTO]
     image_mapping: dict[str, list[str]]

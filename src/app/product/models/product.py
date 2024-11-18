@@ -27,8 +27,8 @@ class Product(BaseModel):
         table = "product"
 
     @classmethod
-    async def get_by_product_code(cls, product_code: str) -> "Product":
-        return await cls.get(product_code=product_code)
+    async def get_by_id(cls, product_id: int) -> "Product":
+        return await cls.get(id=product_id)
 
 
 class Option(BaseModel):
@@ -41,9 +41,9 @@ class Option(BaseModel):
         table = "option"
 
     @classmethod
-    async def get_with_stock_and_images(cls, product_code: str) -> list["Option"]:
+    async def get_with_stock_and_images_by_product_id(cls, product_id: int) -> list["Option"]:
         return (
-            await cls.filter(product__product_code=product_code)
+            await cls.filter(product__id=product_id)
             .annotate(stock=Sum("option_stock__count"))
             .prefetch_related("images")
         )

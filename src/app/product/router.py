@@ -15,11 +15,11 @@ router = APIRouter(prefix="/products", tags=["상품"])
 
 
 @router.get(
-    "/{product_code}",
+    "/{product_id}",
     response_model=ProductResponseDTO,
 )
-async def get_product_handler(product_code: str) -> ProductResponseDTO:
-    return await ProductService.get_product_with_options(product_code=product_code)
+async def get_product_handler(product_id: int) -> ProductResponseDTO:
+    return await ProductService.get_product_with_options(product_id=product_id)
 
 
 @router.post("", description=PRODUCT_CREATE_DESCRIPTION)

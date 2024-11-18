@@ -60,10 +60,12 @@ PRODUCT_CREATE_REQUEST_SCHEMA = {
 }
 
 PRODUCT_CREATE_REQUEST_EXAMPLE_SCHEMA = {
+    "category_id": 1,
     "product": {
         "name": "Sample Product",
         "price": 100.0,
         "discount": 0.1,
+        "discount_option": "percent",
         "origin_price": 110.0,
         "description": "A sample product",
         "detail": "Detailed product description.",
@@ -91,10 +93,12 @@ PRODUCT_CREATE_DESCRIPTION = (
     "### Request Structure\n\n"
     "- **request**: JSON data 예시입니다. product, options, image mapping.\n\n"
     "  {\n\n"
+    '      "category_id": 1,\n\n'
     '      "product": {\n\n'
     '          "name": "믹골프 파우치 2세대",\n\n'
     '          "price": 199.99,\n\n'
-    '          "discount": 0.1,\n\n'
+    '          "discount": 10,\n\n'
+    '          "discount_option": "percent or amount",\n\n'
     '          "origin_price": 249.99,\n\n'
     '          "description": "믹골프의 최신 프리미엄 파우치입니다.",\n\n'
     '          "detail": "2세대 디자인으로, 내구성과 실용성을 모두 갖춘 고급 파우치입니다.",\n\n'
