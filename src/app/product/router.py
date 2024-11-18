@@ -52,8 +52,10 @@ async def create_products_handler(
             for file_name in file_names:
                 matching_file = None
                 for file in files:
-                    normalized_filename = unicodedata.normalize("NFC", file.filename)
-                    normalized_file_name = unicodedata.normalize("NFC", file_name)
+                    normalized_filename = unicodedata.normalize(
+                        "NFC", file.filename or ""
+                    )
+                    normalized_file_name = unicodedata.normalize("NFC", file_name or "")
 
                     if normalized_filename == normalized_file_name:
                         matching_file = file
@@ -64,7 +66,7 @@ async def create_products_handler(
                     os.makedirs(upload_dir, exist_ok=True)
 
                     unique_filename = matching_file.filename
-                    file_path = os.path.join(upload_dir, unique_filename)
+                    file_path = os.path.join(upload_dir, unique_filename or "")
 
                     with open(file_path, "wb") as f:
                         f.write(await matching_file.read())
