@@ -4,7 +4,7 @@ from typing import List, Optional
 from fastapi import APIRouter, Path, Query
 
 from app.category.dtos.category_request import CategoryCreateRequest, CategoryUpdateRequest
-from app.category.dtos.category_response import CategoryDetailResponse, CategoryResponse
+from app.category.dtos.category_response import CategoryResponse
 from app.category.services.category_services import CategoryService
 
 router = APIRouter(prefix="/category", tags=["카테고리"])
@@ -19,8 +19,8 @@ async def get_categories(
     return await CategoryService.get_categories(page, limit, parent_id)
 
 
-@router.get("/{category_id}", response_model=CategoryDetailResponse, summary="카테고리 상세 조회")
-async def get_category(category_id: int = Path(..., description="카테고리 ID")) -> CategoryDetailResponse:
+@router.get("/{category_id}", response_model=CategoryResponse, summary="카테고리 상세 조회")
+async def get_category(category_id: int = Path(..., description="카테고리 ID")) -> CategoryResponse:
     return await CategoryService.get_category_detail(category_id)
 
 

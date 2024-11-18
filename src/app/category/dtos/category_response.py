@@ -13,11 +13,6 @@ class CategoryResponse(BaseModel):
     updated_at: datetime
 
 
-class CategoryDetailResponse(CategoryResponse):
-    product_count: int  # 해당 카테고리의 상품 수
-    is_active: bool  # 카테고리 활성화 여부
-
-
 class CategoryWithSubcategoriesResponse(CategoryResponse):
     subcategories: List["CategoryWithSubcategoriesResponse"] = []
 
