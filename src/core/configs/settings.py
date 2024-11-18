@@ -18,9 +18,7 @@ class Settings(BaseSettings):
     DB_PASSWORD: str = "password"
     DB_NAME: str = "local_db"
 
-    PROJECT_ROOT: str = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), "../../../")
-    )
+    PROJECT_ROOT: str = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
 
     LOCAL_UPLOAD_DIR: str = os.path.join(PROJECT_ROOT, "uploads")
 

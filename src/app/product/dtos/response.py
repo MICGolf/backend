@@ -9,31 +9,42 @@ class OptionImageDTO(BaseModel):
         from_attributes = True
 
 
-class CountProductDTO(BaseModel):
+class OptionSizeDTO(BaseModel):
+    size: str
+    stock: int
+
+
+class OptionDTO(BaseModel):
     id: int
-    count: int
+    color: str
+    color_code: str
+    images: list[OptionImageDTO]
+    sizes: list[OptionSizeDTO]
 
     class Config:
         from_attributes = True
 
 
-class OptionDTO(BaseModel):
+class ProductDTO(BaseModel):
     id: int
-    size: str
-    color: str
-    color_code: str
-    images: list[OptionImageDTO]
-    option_stock: list[CountProductDTO]
+    name: str
+    price: float
+    discount: float
+    origin_price: float
+    description: str
+    detail: str
+    brand: str
+    status: str
+    product_code: str
 
     class Config:
         from_attributes = True
 
 
 class ProductResponseDTO(BaseModel):
-    id: int
-    name: str
-    product_code: str
+    product: ProductDTO
     options: list[OptionDTO]
 
-    class Config:
-        from_attributes = True
+    @classmethod
+    def build(cls, product: ProductDTO, options: list[OptionDTO]) -> "ProductResponseDTO":
+        return cls(product=product, options=options)

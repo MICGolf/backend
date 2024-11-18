@@ -9,7 +9,7 @@ class Category(BaseModel):
         "models.Category",
         related_name="subcategory",
         null=True,
-        on_delete=fields.SET_NULL,
+        on_delete=fields.CASCADE,
     )  # type: ignore
     depth = fields.IntField(default=0)
 

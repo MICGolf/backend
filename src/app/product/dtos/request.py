@@ -7,11 +7,18 @@ from app.product.example_schema.create_request_example import (
 )
 
 
-class OptionDTO(BaseModel):
+class SizeOptionDTO(BaseModel):
     size: str
+    stock: int = Field(..., ge=0)
+
+    class Config:
+        json_schema_extra = {"example": {"size": "M", "stock": 50}}
+
+
+class OptionDTO(BaseModel):
     color: str
     color_code: str = Field(..., pattern=r"^#[0-9A-Fa-f]{6}$")
-    stock: int = Field(..., ge=0)
+    sizes: list[SizeOptionDTO]
 
     class Config:
         json_schema_extra = OPTION_CREATE_SCHEMA
@@ -32,7 +39,7 @@ class ProductDTO(BaseModel):
 
 class ProductWithOptionCreateRequestDTO(BaseModel):
     product: ProductDTO
-    option: list[OptionDTO]
+    options: list[OptionDTO]
     image_mapping: dict[str, list[str]]
 
     class Config:

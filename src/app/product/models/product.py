@@ -1,12 +1,21 @@
+from enum import StrEnum
+
 from tortoise import fields
+from tortoise.functions import Sum
 
 from common.models.base_model import BaseModel
+
+
+class DiscountOption(StrEnum):
+    PERCENT = "percent"  # 퍼센트 할인
+    AMOUNT = "amount"  # 금액 할인
 
 
 class Product(BaseModel):
     name = fields.CharField(max_length=255)
     price = fields.DecimalField(max_digits=10, decimal_places=2)
     discount = fields.DecimalField(max_digits=5, decimal_places=2, default=0.00)
+    discount_option = fields.CharEnumField(DiscountOption, max_length=10, default=DiscountOption.PERCENT)
     origin_price = fields.DecimalField(max_digits=10, decimal_places=2)
     description = fields.TextField(null=True)
     detail = fields.TextField(null=True)
@@ -18,12 +27,8 @@ class Product(BaseModel):
         table = "product"
 
     @classmethod
-    async def get_with_related_all_data(cls, product_code: str) -> "Product":
-        return await cls.get(product_code=product_code).prefetch_related(
-            "options",
-            "options__images",
-            "options__option_stock",
-        )
+    async def get_by_product_code(cls, product_code: str) -> "Product":
+        return await cls.get(product_code=product_code)
 
 
 class Option(BaseModel):
@@ -34,6 +39,14 @@ class Option(BaseModel):
 
     class Meta:
         table = "option"
+
+    @classmethod
+    async def get_with_stock_and_images(cls, product_code: str) -> list["Option"]:
+        return (
+            await cls.filter(product__product_code=product_code)
+            .annotate(stock=Sum("option_stock__count"))
+            .prefetch_related("images")
+        )
 
 
 class OptionImage(BaseModel):
