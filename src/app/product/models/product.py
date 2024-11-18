@@ -17,12 +17,20 @@ class Product(BaseModel):
     class Meta:
         table = "product"
 
+    @classmethod
+    async def get_with_related_all_data(cls, product_code: str) -> "Product":
+        return await cls.get(product_code=product_code).prefetch_related(
+            "options",
+            "options__images",
+            "options__option_stock",
+        )
+
 
 class Option(BaseModel):
     size = fields.CharField(max_length=255)
     color = fields.CharField(max_length=255)
     color_code = fields.CharField(max_length=255, null=True)
-    product = fields.ForeignKeyField("models.Product", related_name="option", on_delete=fields.CASCADE)  # type: ignore
+    product = fields.ForeignKeyField("models.Product", related_name="options", on_delete=fields.CASCADE)  # type: ignore
 
     class Meta:
         table = "option"
@@ -30,7 +38,7 @@ class Option(BaseModel):
 
 class OptionImage(BaseModel):
     image_url = fields.CharField(max_length=255)
-    option = fields.ForeignKeyField("models.Option", related_name="image", on_delete=fields.CASCADE)  # type: ignore
+    option = fields.ForeignKeyField("models.Option", related_name="images", on_delete=fields.CASCADE)  # type: ignore
 
     class Meta:
         table = "option_image"
