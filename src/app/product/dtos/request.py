@@ -30,7 +30,8 @@ class OptionDTO(BaseModel):
 class ProductDTO(BaseModel):
     name: str
     price: float = Field(..., gt=0)
-    discount: float = Field(..., ge=0, le=1)
+    discount: Optional[float] = Field(None, description="할인율 or 할인금액")
+    discount_option: Optional[str] = Field(None, description="검색할 제품 코드", pattern=r"^(percent|amount)$")
     origin_price: float = Field(..., gt=0)
     description: str
     detail: str

@@ -62,30 +62,30 @@ PRODUCT_CREATE_REQUEST_SCHEMA = {
 PRODUCT_CREATE_REQUEST_EXAMPLE_SCHEMA = {
     "category_id": 1,
     "product": {
-        "name": "Sample Product",
-        "price": 100.0,
-        "discount": 0.1,
+        "name": "믹골프 샘플 데이터",
+        "price": 90000,
+        "discount": 10,
         "discount_option": "percent",
-        "origin_price": 110.0,
-        "description": "A sample product",
-        "detail": "Detailed product description.",
-        "product_code": "SP001",
+        "origin_price": 100000,
+        "description": "믹골프 샘플데이터",
+        "detail": "믹골프 샘플 데이터 상세 설명",
+        "product_code": "MG-0001-RD",
     },
     "options": [
         {
-            "color": "Red",
+            "color": "믹골프 레드",
             "color_code": "#FF0000",
             "sizes": [{"size": "M", "stock": 50}, {"size": "L", "stock": 30}],
         },
         {
-            "color": "Blue",
+            "color": "믹골프 스카이블루",
             "color_code": "#0000FF",
             "sizes": [{"size": "M", "stock": 40}, {"size": "L", "stock": 20}],
         },
     ],
     "image_mapping": {
-        "#FF0000": ["image1.jpg", "image2.jpg"],
-        "#0000FF": ["image3.jpg"],
+        "#FF0000": ["로고1.jpg", "로고2.jpg"],
+        "#0000FF": ["로고3.jpg"],
     },
 }
 
