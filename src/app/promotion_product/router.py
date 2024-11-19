@@ -1,14 +1,20 @@
-from fastapi import APIRouter
+from typing import Any
 
-router_best = APIRouter(prefix="/best-product", tags=["Best-Product"])
-router_mds = APIRouter(prefix="/mds-choice", tags=["Md's Choice"])
+from fastapi import APIRouter, HTTPException, Query
+
+from app.promotion_product.dtos.promotion_response import PromotionProductListResponse
+from app.promotion_product.services.promotion_services import PromotionProductService
+
+router = APIRouter(prefix="/promotion-products", tags=["프로모션"])
 
 
-@router_best.get("")
-async def get_best_product() -> dict[str, str]:
-    return {"message": "Hello World"}
+@router.get("", response_model=PromotionProductListResponse)
+async def get_promotion_products_route(
+    promotion_type: str = Query(..., description="Promotion type: 'best' or 'md_pick'"),
+    page: int = Query(1, ge=1),
+    size: int = Query(10, ge=1, le=100),
+) -> dict[str, int | list[dict[str, Any]]]:
+    if promotion_type not in ["best", "md_pick"]:
+        raise HTTPException(status_code=400, detail="Invalid promotion type. Choose 'best' or 'md_pick'.")
 
-
-@router_mds.get("")
-async def get_mds_choice() -> dict[str, str]:
-    return {"message": "Hello World"}
+    return await PromotionProductService.get_promotion_products(promotion_type, page, size)
