@@ -48,6 +48,18 @@ class Option(BaseModel):
             .prefetch_related("images")
         )
 
+    @classmethod
+    async def get_all_with_stock_and_images(cls) -> list["Option"]:
+        return await cls.all().annotate(stock=Sum("option_stock__count")).prefetch_related("images")
+
+    @classmethod
+    async def get_by_product_ids(cls, product_ids: list[int]) -> list["Option"]:
+        return (
+            await cls.filter(product__id__in=product_ids)
+            .annotate(stock=Sum("option_stock__count"))
+            .prefetch_related("images")
+        )
+
 
 class OptionImage(BaseModel):
     image_url = fields.CharField(max_length=255)

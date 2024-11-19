@@ -49,3 +49,11 @@ class ProductResponseDTO(BaseModel):
     @classmethod
     def build(cls, product: ProductDTO, options: list[OptionDTO]) -> "ProductResponseDTO":
         return cls(product=product, options=options)
+
+
+class ProductsResponseDTO(BaseModel):
+    products: list[ProductDTO]
+
+    @classmethod
+    def build(cls, products: list[ProductDTO]) -> "ProductsResponseDTO":
+        return cls(products=products)
