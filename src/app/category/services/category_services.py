@@ -1,7 +1,8 @@
 # app/category/services/category_service.py
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from fastapi import HTTPException
+from tortoise.expressions import Q
 
 from app.category.dtos.category_request import CategoryCreateRequest, CategoryUpdateRequest
 from app.category.dtos.category_response import CategoryResponse, CategoryWithSubcategoriesResponse
@@ -69,3 +70,7 @@ class CategoryService:
             raise HTTPException(status_code=400, detail="Cannot delete category with products")
 
         await category.delete()
+
+    @staticmethod
+    async def get_category_and_subcategories(category_id: int) -> list[tuple[Any, ...]]:
+        return await Category.filter(Q(id=category_id) | Q(parent_id=category_id)).values_list("id", flat=True)
