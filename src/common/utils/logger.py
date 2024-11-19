@@ -1,42 +1,39 @@
 import logging
-
 import os
+from typing import Optional
 
-from core.configs import Settings
+from core.configs import Settings  # type: ignore
 from core.configs.settings import Env
 
 formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
 
 def setup_logger(
-    name: str = "app_logger", settings: Settings = None, enable_tortoise_logging: bool = False
+    name: str = "app_logger", settings: Optional[Settings] = None, enable_tortoise_logging: bool = False
 ) -> logging.Logger:
-    """
-    로거 설정 함수.
-    :param name: 로거 이름
-    :param settings: Settings 객체로 환경 정보 전달
-    :param enable_tortoise_logging: Tortoise ORM 쿼리 로깅 활성화 여부 (개발 환경에서만 동작)
-    :return: 설정된 로거 객체
-    """
-    logger = logging.getLogger(name)
-    logger.setLevel(logging.DEBUG if settings.ENV == Env.LOCAL else logging.INFO)
+    if not settings:
+        raise ValueError("Settings 객체는 None일 수 없습니다.")
 
-    if settings.ENV != Env.LOCAL:
-        log_dir = f"{settings.PROJECT_ROOT}/logs"
+    logger = logging.getLogger(name)
+    is_local_env = settings.ENV == Env.LOCAL
+
+    logger.setLevel(logging.DEBUG if is_local_env else logging.INFO)
+
+    if not is_local_env:
+        log_dir = os.path.join(settings.PROJECT_ROOT, "logs")
         os.makedirs(log_dir, exist_ok=True)
 
     if not logger.hasHandlers():
-        if settings.ENV == Env.LOCAL:
-            handler = logging.StreamHandler()
+        if is_local_env:
+            handler: logging.Handler = logging.StreamHandler()
         else:
-            log_file = f"{settings.PROJECT_ROOT}/logs/{name}.log"
+            log_file = os.path.join(settings.PROJECT_ROOT, "logs", f"{name}.log")
             handler = logging.FileHandler(log_file)
 
         handler.setFormatter(formatter)
         logger.addHandler(handler)
 
-    # Tortoise ORM 로깅 활성화 (LOCAL 환경에서만)
-    if enable_tortoise_logging and settings.ENV == Env.LOCAL:
+    if enable_tortoise_logging and is_local_env:
         db_client_logger = logging.getLogger("tortoise.db_client")
         db_client_logger.setLevel(logging.DEBUG)
 
