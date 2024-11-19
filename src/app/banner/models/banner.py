@@ -1,5 +1,7 @@
 from enum import StrEnum
+
 from tortoise import fields
+
 from common.models.base_model import BaseModel
 
 

@@ -1,9 +1,11 @@
 import os
+
 from fastapi import HTTPException, UploadFile
 from tortoise.expressions import F
-from app.banner.models.banner import Banner
+
 from app.banner.dtos.request import BannerCreateRequest, BannerUpdateRequest
 from app.banner.dtos.response import BannerResponse
+from app.banner.models.banner import Banner
 
 
 class BannerService:
@@ -15,9 +17,7 @@ class BannerService:
 
     @staticmethod
     async def create_banner(
-            request: BannerCreateRequest,
-            image: UploadFile,
-            upload_dir: str = "uploads/banners"
+        request: BannerCreateRequest, image: UploadFile, upload_dir: str = "uploads/banners"
     ) -> BannerResponse:
         """배너 생성"""
         import os
@@ -34,19 +34,13 @@ class BannerService:
         last_banner = await Banner.filter(banner_type=request.banner_type).order_by("-display_order").first()
         display_order = (last_banner.display_order + 1) if last_banner else 0
 
-        banner = await Banner.create(
-            **request.model_dump(),
-            image_url=file_path,
-            display_order=display_order
-        )
+        banner = await Banner.create(**request.model_dump(), image_url=file_path, display_order=display_order)
 
         return BannerResponse.from_banner(banner)
 
     @staticmethod
     async def update_banner(
-            banner_id: int,
-            request: BannerUpdateRequest,
-            image: UploadFile | None = None
+        banner_id: int, request: BannerUpdateRequest, image: UploadFile | None = None
     ) -> BannerResponse:
         """배너 수정"""
         banner = await Banner.get_or_none(id=banner_id)
@@ -101,10 +95,9 @@ class BannerService:
                 pass  # 이미지 삭제 실패해도 배너는 삭제 진행
 
         # 같은 타입의 다른 배너들의 순서 재조정
-        await Banner.filter(
-            banner_type=banner.banner_type,
-            display_order__gt=banner.display_order
-        ).update(display_order=F('display_order') - 1)
+        await Banner.filter(banner_type=banner.banner_type, display_order__gt=banner.display_order).update(
+            display_order=F("display_order") - 1
+        )
 
         await banner.delete()
         return True

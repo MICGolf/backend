@@ -1,9 +1,15 @@
-from pydantic import BaseModel, Field
 from datetime import datetime
+from typing import TYPE_CHECKING
+
+from pydantic import BaseModel, Field
+
+if TYPE_CHECKING:
+    from app.banner.models.banner import Banner  # 순환 참조 방지를 위한 조건부 임포트
 
 
 class BannerResponse(BaseModel):
     """배너 응답"""
+
     id: int = Field(..., description="배너 ID")
     title: str = Field(..., description="배너 제목")
     image_url: str = Field(..., description="배너 이미지 URL")
