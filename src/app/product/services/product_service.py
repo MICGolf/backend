@@ -223,7 +223,7 @@ class ProductService:
         offset = (page - 1) * page_size
         limit = page_size
 
-        order_by = f"-{sort}" if order == "desc" else sxort
+        order_by = f"-{sort}" if order == "desc" else sort
 
         products = await Product.filter(filters).offset(offset).limit(limit).order_by(order_by)
         product_ids = [product.id for product in products]  # type: ignore[attr-defined]

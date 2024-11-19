@@ -51,10 +51,10 @@ class ProductWithOptionCreateRequestDTO(BaseModel):
 
 
 class ProductFilterRequestDTO(BaseModel):
-    product_name: Optional[str] = Field(None, description="검색할 제품 이름", example="Smartphone")
-    product_id: Optional[int] = Field(None, description="특정 제품의 ID", example=123)
-    product_code: Optional[str] = Field(None, description="검색할 제품 코드", example="SP12345")
-    sale_status: Optional[str] = Field(None, description="판매 상태 (예: available, sold_out 등)", example="available")
-    category_id: Optional[int] = Field(None, description="카테고리 ID", example=5)
-    start_date: Optional[datetime] = Field(None, description="검색 시작 날짜 (YYYY-MM-DD 형식)", example="2024-01-01")
-    end_date: Optional[datetime] = Field(None, description="검색 종료 날짜 (YYYY-MM-DD 형식)", example="2024-12-31")
+    product_name: Optional[str] = Field(None, description="검색할 제품 이름")
+    product_id: Optional[int] = Field(None, description="특정 제품의 ID")
+    product_code: Optional[str] = Field(None, description="검색할 제품 코드")
+    sale_status: Optional[str] = Field(None, description="판매 상태 (예: available, sold_out 등)")
+    category_id: Optional[int] = Field(None, description="카테고리 ID")
+    start_date: Optional[datetime] = Field(None, description="검색 시작 날짜 (YYYY-MM-DD 형식)")
+    end_date: Optional[datetime] = Field(None, description="검색 종료 날짜 (YYYY-MM-DD 형식)")
