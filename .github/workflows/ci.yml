@@ -44,18 +44,19 @@ jobs:
 
       - name: Run black
         run: |
-          poetry run black . --check
+          poetry run black src --check
 
       - name: Run isort
         run: |
-          poetry run isort . --check --diff
+          poetry run isort src --check --diff
 
       - name: Run Mypy
         run: |
-          poetry run mypy .
+          poetry run mypy src
 
       - name: Run tests with pytest
         run: |
+          cd src
           poetry run coverage run -m pytest
           poetry run coverage report -m
           poetry run coverage html
