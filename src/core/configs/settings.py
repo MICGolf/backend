@@ -37,4 +37,4 @@ class Settings(BaseSettings):
         if self.ENV == Env.LOCAL:
             return self.LOCAL_UPLOAD_DIR
         else:
-            return self.NCLOUD_ENDPOINT
+            return self.ENDPOINT_URL
