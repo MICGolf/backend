@@ -400,3 +400,24 @@ class ProductService:
             files,
             upload_dir,
         )
+
+    @classmethod
+    async def delete_product(cls, product_id: int) -> None:
+
+        product = await Product.get(id=product_id)
+
+        await cls.delete_product_images(product_id)
+
+        await product.delete()
+
+    @classmethod
+    async def delete_product_images(cls, product_id: int) -> None:
+        images = await OptionImage.filter(option__product_id=product_id).all()
+
+        async def delete_image_file(image: OptionImage) -> None:
+            try:
+                os.remove(image.image_url)
+            except FileNotFoundError:
+                pass
+
+        await asyncio.gather(*(delete_image_file(image) for image in images))
