@@ -305,8 +305,12 @@ class ProductService:
         if tasks:
             await asyncio.gather(*tasks)
 
+        created_options = (
+            await Option.filter(product=product).exclude(id__in=[opt.id for opt in existing_options]).all()
+        )
+
         return {
-            "created": options_to_create,
+            "created": created_options,
             "updated": options_to_update,
             "deleted": options_to_delete,
         }

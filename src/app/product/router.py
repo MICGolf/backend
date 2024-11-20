@@ -122,7 +122,7 @@ async def update_product_handler(
 
 @router.delete(
     "/{product_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     summary="상품 삭제 API",
     description="단일 상품 삭제",
 )
