@@ -1,12 +1,18 @@
 import json
 
-from fastapi import APIRouter, Body, Depends, File, UploadFile, status
+from fastapi import APIRouter, Body, Depends, File, Path, UploadFile, status
 
-from app.product.dtos.request import ProductFilterRequestDTO, ProductWithOptionCreateRequestDTO
+from app.product.dtos.request import (
+    BatchUpdateStatusRequest,
+    ProductFilterRequestDTO,
+    ProductWithOptionCreateRequestDTO,
+    ProductWithOptionUpdateRequestDTO,
+)
 from app.product.dtos.response import ProductResponseDTO
 from app.product.example_schema.create_request_example import (
     PRODUCT_CREATE_DESCRIPTION,
     PRODUCT_CREATE_REQUEST_EXAMPLE_SCHEMA,
+    PRODUCT_UPDATE_REQUEST_EXAMPLE_SCHEMA,
 )
 from app.product.services.product_service import ProductService
 from common.utils.pagination_and_sorting_dto import PaginationAndSortingDTO
@@ -71,6 +77,42 @@ async def create_products_handler(
 
     return await ProductService.create_product_with_options(
         product_create_dto=ProductWithOptionCreateRequestDTO(**request_data),
+        files=files,
+        upload_dir=settings.UPLOAD_DIR,
+    )
+
+
+@router.patch(
+    "/products/status",
+    status_code=status.HTTP_200_OK,
+    summary="상품 상태 업데이트 API",
+    description="상품 상태를 업데이트합니다. status : 'Y' or 'N'",
+)
+async def update_products_status_handler(request: BatchUpdateStatusRequest) -> None:
+    return await ProductService.update_products_status(product_ids=request.product_ids, status=request.status)
+
+
+@router.patch(
+    "/products/{product_id}",
+    status_code=status.HTTP_200_OK,
+    summary="상품 업데이트 API",
+    description="상품 업데이트",
+)
+async def update_product_handler(
+    product_id: int = Path(..., description="수정할 상품의 ID"),
+    request: str = Body(
+        media_type="application/json",
+        examples=[
+            PRODUCT_UPDATE_REQUEST_EXAMPLE_SCHEMA,
+        ],
+    ),
+    files: list[UploadFile] = File([]),
+) -> None:
+    request_data = json.loads(request)
+
+    return await ProductService.update_product_with_options(
+        product_id=product_id,
+        product_update_dto=ProductWithOptionUpdateRequestDTO(**request_data),
         files=files,
         upload_dir=settings.UPLOAD_DIR,
     )

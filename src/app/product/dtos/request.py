@@ -59,3 +59,35 @@ class ProductFilterRequestDTO(BaseModel):
     category_id: Optional[int] = Field(None, description="카테고리 ID")
     start_date: Optional[datetime] = Field(None, description="검색 시작 날짜 (YYYY-MM-DD 형식)")
     end_date: Optional[datetime] = Field(None, description="검색 종료 날짜 (YYYY-MM-DD 형식)")
+
+
+class BatchUpdateStatusRequest(BaseModel):
+    product_ids: list[int]
+    status: str = Field(..., pattern=r"^(Y|N)$")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "product_ids": [1, 2, 3],
+                "status": "Y",
+            }
+        }
+
+
+class SizeOptionUpdateDTO(SizeOptionDTO):
+    id: Optional[int] = None
+
+
+class OptionUpdateDTO(OptionDTO):
+    id: Optional[int] = None
+
+
+class ProductUpdateDTO(ProductDTO):
+    pass
+
+
+class ProductWithOptionUpdateRequestDTO(BaseModel):
+    category_id: int
+    product: ProductUpdateDTO
+    options: list[OptionUpdateDTO]
+    image_mapping: dict[str, list[str]]
