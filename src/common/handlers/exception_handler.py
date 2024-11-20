@@ -20,6 +20,7 @@ def attach_exception_handlers(app: FastAPI) -> None:
             content={
                 "code": 500,
                 "data": str(exc),
+                "message": "An unexpected error occurred. Please try again later.",
             },
         )
 
@@ -33,17 +34,25 @@ def attach_exception_handlers(app: FastAPI) -> None:
             content={
                 "code": exc.status_code,
                 "data": exc.detail,
+                "message": "An error occurred while processing your request.",
             },
         )
 
     @app.exception_handler(RequestValidationError)
     async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
         logger.warning(f"Validation Error: {exc.errors()} | Path: {request.url.path}", exc_info=exc)
+        error_messages = []
+        for error in exc.errors():
+            field = ".".join(map(str, error["loc"]))  # 필드 위치
+            error_messages.append(f"{field}: {error['msg']}")
+
+        # 새로운 에러 응답
         return JSONResponse(
             status_code=422,
             content={
                 "code": 422,
-                "data": exc.errors(),
+                "errors": error_messages,  # 커스텀 에러 메시지 리스트
+                "message": "Validation failed. Please check your input.",
             },
         )
 
@@ -52,5 +61,21 @@ def attach_exception_handlers(app: FastAPI) -> None:
         logger.warning(f"DoesNotExist Error: {str(exc)} | Path: {request.url.path}", exc_info=exc)
         return JSONResponse(
             status_code=404,
-            content={"code": 404, "data": str(exc)},
+            content={
+                "code": 404,
+                "data": str(exc),
+                "message": "The requested resource does not exist.",
+            },
+        )
+
+    @app.exception_handler(TypeError)
+    async def type_error_exception_handler(request: Request, exc: TypeError) -> JSONResponse:
+        logger.warning(f"Type Error: {str(exc)} | Path: {request.url.path}", exc_info=exc)
+        return JSONResponse(
+            status_code=400,
+            content={
+                "code": 400,
+                "data": str(exc),
+                "message": "A type error occurred while processing your request.",
+            },
         )

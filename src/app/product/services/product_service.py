@@ -3,14 +3,19 @@ import itertools
 import os
 import unicodedata
 from datetime import datetime
-from typing import List, Optional
+from typing import Optional
 
 from fastapi import UploadFile
 from tortoise.expressions import Q
 
 from app.category.models.category import Category, CategoryProduct
 from app.category.services.category_services import CategoryService
-from app.product.dtos.request import ProductWithOptionCreateRequestDTO
+from app.product.dtos.request import (
+    OptionUpdateDTO,
+    ProductUpdateDTO,
+    ProductWithOptionCreateRequestDTO,
+    ProductWithOptionUpdateRequestDTO,
+)
 from app.product.dtos.response import OptionDTO, OptionImageDTO, ProductDTO, ProductResponseDTO
 from app.product.models.product import CountProduct, Option, OptionImage, Product
 
@@ -102,7 +107,7 @@ class ProductService:
     async def create_product_with_options(
         cls,
         product_create_dto: ProductWithOptionCreateRequestDTO,
-        files: List[UploadFile],
+        files: list[UploadFile],
         upload_dir: str,
     ) -> None:
 
@@ -230,3 +235,168 @@ class ProductService:
         options = await Option.get_by_product_ids(product_ids=product_ids)
 
         return products, options
+
+    @classmethod
+    async def update_products_status(cls, product_ids: list[int], status: str) -> None:
+        await Product.filter(id__in=product_ids).update(status=status)
+
+    @staticmethod
+    async def _update_product_basic_info(product_id: int, product_update_dto: ProductUpdateDTO) -> Product:
+        product = await Product.get(id=product_id)
+        await product.update_from_dict(product_update_dto.model_dump()).save()
+        return product
+
+    @staticmethod
+    async def _update_category(product: Product, new_category_id: int) -> None:
+        current_category_product = await CategoryProduct.filter(product=product).first()
+
+        if current_category_product and current_category_product.category_id == new_category_id:  # type: ignore[attr-defined]
+            return
+
+        if current_category_product:
+            await current_category_product.delete()
+
+        new_category = await Category.get(id=new_category_id)
+        await CategoryProduct.create(product=product, category=new_category)
+
+    @staticmethod
+    async def _update_options(product: Product, options_dto: list[OptionUpdateDTO]) -> dict[str, list[Option]]:
+        existing_options = await Option.filter(product=product).all()
+        existing_option_map = {(opt.color_code, opt.size): opt for opt in existing_options}
+
+        options_to_create = []
+        options_to_delete = []
+        options_to_update = []
+
+        updated_keys = {(opt.color_code, size.size) for opt in options_dto for size in opt.sizes}
+
+        for key, option in existing_option_map.items():
+            if key not in updated_keys:
+                options_to_delete.append(option)
+
+        for option_dto in options_dto:
+            for size_dto in option_dto.sizes:
+                key = (option_dto.color_code, size_dto.size)
+                if key in existing_option_map:
+                    option = existing_option_map[key]
+                    option.color = option_dto.color
+                    option.color_code = option_dto.color_code
+                    option.size = size_dto.size
+                    options_to_update.append(option)
+                else:
+                    options_to_create.append(
+                        Option(
+                            product=product,
+                            color=option_dto.color,
+                            color_code=option_dto.color_code,
+                            size=size_dto.size,
+                        )
+                    )
+
+        tasks = []
+
+        if options_to_delete:
+            tasks.append(Option.filter(pk__in=[opt.id for opt in options_to_delete]).delete())  # type: ignore
+        if options_to_update:
+            tasks.append(Option.bulk_update(options_to_update, fields=["color", "color_code", "size"]))  # type: ignore
+        if options_to_create:
+            tasks.append(Option.bulk_create(options_to_create))  # type: ignore
+
+        if tasks:
+            await asyncio.gather(*tasks)
+
+        return {
+            "created": options_to_create,
+            "updated": options_to_update,
+            "deleted": options_to_delete,
+        }
+
+    @staticmethod
+    async def _update_stock(product: Product, options_dto: list[OptionUpdateDTO]) -> None:
+        existing_options = await Option.filter(product=product).all()
+        existing_option_map = {(opt.color_code, opt.size): opt for opt in existing_options}
+
+        count_products_to_create = []
+        count_products_to_update = []
+
+        for option_dto in options_dto:
+            for size_dto in option_dto.sizes:
+                key = (option_dto.color_code, size_dto.size)
+                option = existing_option_map.get(key)
+                if option:
+                    _, created = await CountProduct.update_or_create(
+                        product=product,
+                        option=option,
+                        defaults={"count": size_dto.stock},
+                    )
+                    if not created:
+                        count_products_to_update.append(option)
+                else:
+                    count_products_to_create.append(
+                        CountProduct(
+                            product=product,
+                            option=option,
+                            count=size_dto.stock,
+                        )
+                    )
+
+        tasks = []
+        if count_products_to_create:
+            tasks.append(CountProduct.bulk_create(count_products_to_create))
+        if count_products_to_update:
+            tasks.extend(count_products_to_update)  # type: ignore
+
+        if tasks:
+            await asyncio.gather(*tasks)
+
+    @classmethod
+    async def _update_images(
+        cls,
+        product: Product,
+        options: list[Option],
+        image_mapping: dict[str, list[str]],
+        files: list[UploadFile],
+        upload_dir: str,
+    ) -> None:
+        existing_images = await OptionImage.filter(option__product=product).all()
+        images_to_keep = {img for color_code in image_mapping for img in image_mapping[color_code]}
+        images_to_delete = [img for img in existing_images if img.image_url not in images_to_keep]
+
+        for img in images_to_delete:
+            try:
+                os.remove(img.image_url)
+            except FileNotFoundError:
+                pass
+            await img.delete()
+
+        if files:
+            new_images = await cls._process_images(options, image_mapping, files, upload_dir)
+            await OptionImage.bulk_create(new_images)
+
+    @classmethod
+    async def update_product_with_options(
+        cls,
+        product_id: int,
+        product_update_dto: ProductWithOptionUpdateRequestDTO,
+        files: list[UploadFile],
+        upload_dir: str,
+    ) -> None:
+        # 1. 기본 정보 업데이트
+        product = await cls._update_product_basic_info(product_id, product_update_dto.product)
+
+        # 2. 카테고리 업데이트
+        await cls._update_category(product, product_update_dto.category_id)
+        # 3. 옵션 업데이트
+        updated_options = await cls._update_options(product, product_update_dto.options)
+
+        # 4. 재고 업데이트
+        await cls._update_stock(product, product_update_dto.options)
+
+        # 5. 이미지 업데이트
+        await cls._update_images(
+            product,
+            updated_options["created"] + updated_options["updated"],
+            product_update_dto.image_mapping,
+            files,
+            upload_dir,
+        )

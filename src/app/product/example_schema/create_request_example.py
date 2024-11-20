@@ -133,3 +133,50 @@ PRODUCT_CREATE_DESCRIPTION = (
     "  - files=@image2.jpg\n\n"
     "  - files=@image3.jpg\n\n"
 )
+
+PRODUCT_UPDATE_REQUEST_EXAMPLE_SCHEMA = {
+    "category_id": 2,  # 수정된 카테고리 ID
+    "product": {
+        "name": "믹골프 수정된 샘플 데이터",  # 수정된 이름
+        "price": 85000,  # 수정된 가격
+        "discount": 15,  # 수정된 할인율
+        "discount_option": "percent",
+        "origin_price": 100000,
+        "description": "믹골프 수정된 샘플 데이터 설명",
+        "detail": "믹골프 수정된 샘플 데이터 상세 설명",
+        "product_code": "MG-0002-RD",
+    },
+    "options": [
+        {
+            "id": 1,  # 기존 옵션의 ID (필수)
+            "color": "믹골프 레드",  # 수정 없음
+            "color_code": "#FF0000",  # 수정 없음
+            "sizes": [
+                {"id": 1, "size": "M", "stock": 60},  # 기존 사이즈, 재고만 수정
+                {"size": "XL", "stock": 20},  # 새로운 사이즈 추가 (id 없음)
+            ],
+        },
+        {
+            "id": 2,  # 기존 옵션의 ID
+            "color": "믹골프 스카이블루",  # 수정 없음
+            "color_code": "#0000FF",  # 수정 없음
+            "sizes": [
+                {"id": 3, "size": "M", "stock": 50},  # 기존 사이즈, 재고 수정
+                {"id": 4, "size": "L", "stock": 25},  # 기존 사이즈, 재고 수정
+            ],
+        },
+        {
+            "color": "믹골프 그린",  # 새로운 옵션 추가
+            "color_code": "#00FF00",
+            "sizes": [
+                {"size": "M", "stock": 30},  # 새로운 사이즈 추가
+                {"size": "L", "stock": 20},  # 새로운 사이즈 추가
+            ],
+        },
+    ],
+    "image_mapping": {
+        "#FF0000": ["로고1.jpg", "로고2.jpg"],  # 기존 매핑 유지
+        "#0000FF": ["로고3.jpg", "로고4.jpg"],  # 새로운 이미지 추가
+        "#00FF00": ["로고5.jpg"],  # 새로운 옵션 이미지 추가
+    },
+}
