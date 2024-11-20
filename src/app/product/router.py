@@ -28,7 +28,9 @@ router = APIRouter(prefix="/products", tags=["상품"])
     summary="상품 단일 조회 API",
     description="상품 단일 조회로 상품의 정보를 조회합니다",
 )
-async def get_product_handler(product_id: int) -> ProductResponseDTO:
+async def get_product_handler(
+    product_id: int = Path(..., description="조회할 상품의 ID"),
+) -> ProductResponseDTO:
     return await ProductService.get_product_with_options(product_id=product_id)
 
 
@@ -93,7 +95,7 @@ async def update_products_status_handler(request: BatchUpdateStatusRequest) -> N
 
 
 @router.patch(
-    "/products/{product_id}",
+    "/{product_id}",
     status_code=status.HTTP_200_OK,
     summary="상품 업데이트 API",
     description="상품 업데이트",
@@ -116,3 +118,15 @@ async def update_product_handler(
         files=files,
         upload_dir=settings.UPLOAD_DIR,
     )
+
+
+@router.delete(
+    "/{product_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="상품 삭제 API",
+    description="단일 상품 삭제",
+)
+async def delete_product_handler(
+    product_id: int = Path(..., description="삭제할 상품의 ID"),
+) -> None:
+    return await ProductService.delete_product(product_id=product_id)
