@@ -1,11 +1,9 @@
-import os
-
-from dotenv import load_dotenv
 from fastapi import FastAPI
 from tortoise import Tortoise
 from tortoise.contrib.fastapi import register_tortoise
 
-load_dotenv()
+from core.configs import settings
+
 
 TORTOISE_MODELS = [
     "app.banner.models.banner",
@@ -24,11 +22,11 @@ TORTOISE_ORM = {
         "default": {
             "engine": "tortoise.backends.mysql",
             "credentials": {
-                "host": os.getenv("DB_HOST", "127.0.0.1"),
-                "port": int(os.getenv("DB_PORT", 3306)),
-                "user": os.getenv("DB_USER", "root"),
-                "password": os.getenv("DB_PASSWORD"),
-                "database": os.getenv("DB_NAME"),
+                "host": settings.DB_HOST,
+                "port": settings.DB_PORT,
+                "user": settings.DB_USER,
+                "password": settings.DB_PASSWORD,
+                "database": settings.DB_NAME,
                 "connect_timeout": 5,
                 # "maxsize": configs.MAX_CONNECTION_PER_CONNECTION_POOL,
             },
@@ -39,7 +37,6 @@ TORTOISE_ORM = {
             "models": TORTOISE_MODELS,
         },
     },
-    # "routers": ["app.configs.database_config.Router"],
     "timezone": "Asia/Seoul",
 }
 
