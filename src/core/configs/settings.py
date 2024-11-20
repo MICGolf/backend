@@ -22,10 +22,11 @@ class Settings(BaseSettings):
 
     LOCAL_UPLOAD_DIR: str = os.path.join(PROJECT_ROOT, "uploads")
 
-    NCLOUD_ACCESS_KEY: str = "your-access-key"
-    NCLOUD_SECRET_KEY: str = "your-secret-key"
-    NCLOUD_ENDPOINT: str = "https://kr.object.ncloudstorage.com"
-    NCLOUD_BUCKET_NAME: str = "your-bucket-name"
+    AWS_ACCESS_KEY: str = "your-access-key"
+    AWS_SECRET_KEY: str = "your-secret-key"
+    ENDPOINT_URL: str = "https://kr.object.ncloudstorage.com"
+    REGION_NAME: str = "your-region-name"
+    AWS_STORAGE_BUCKET_NAME: str = "your-bucket-name"
 
     class Config:
         env_file = f".env.{os.getenv('ENV', 'local')}"  # 로드할 .env 파일 결정
