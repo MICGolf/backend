@@ -4,7 +4,6 @@ from tortoise.contrib.fastapi import register_tortoise
 
 from core.configs import settings
 
-
 TORTOISE_MODELS = [
     "app.banner.models.banner",
     "app.user.models.user",
