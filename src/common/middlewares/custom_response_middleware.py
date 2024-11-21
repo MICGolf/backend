@@ -28,6 +28,10 @@ class CommonResponseMiddleware(BaseHTTPMiddleware):
             except json.JSONDecodeError:
                 data = body.decode("utf-8")
 
+            # 기존 응답의 헤더를 복사
+            headers = response.headers
+
+            # JSONResponse에 기존 헤더를 포함
             return JSONResponse(
                 content={
                     "code": response.status_code,
@@ -35,6 +39,7 @@ class CommonResponseMiddleware(BaseHTTPMiddleware):
                     "message": "정상 처리되었습니다.",
                 },
                 status_code=response.status_code,
+                headers=headers,  # 기존 헤더 유지
             )
 
         return response

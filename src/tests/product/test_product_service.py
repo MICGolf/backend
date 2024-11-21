@@ -1,7 +1,10 @@
 from tortoise.contrib.test import TestCase
+
+from app.product.dtos.request import ProductWithOptionCreateRequestDTO, SizeOptionDTO, OptionDTO, ProductDTO
 from app.product.models.product import Product, Option, CountProduct, OptionImage
 from app.category.models.category import Category, CategoryProduct
-from app.product.dtos.response import ProductResponseDTO, OptionDTO, OptionImageDTO, ProductDTO
+from app.product.dtos.response import ProductResponseDTO
+
 from app.product.services.product_service import ProductService
 
 
@@ -72,28 +75,86 @@ class TestProductService(TestCase):
         assert option_2_dto.sizes[0].size == "L"
         assert option_2_dto.sizes[0].stock == 20
 
-    async def test_create_product_with_options(self):
-        # Given: 상품 생성 요청 DTO
+    async def test_create_product_with_single_option(self):
+        # Given: 상품 생성 요청 DTO (옵션이 1개인 경우)
+        product = ProductDTO(
+            name="Single Option Product",
+            price=200.0,
+            discount=20.0,
+            discount_option="percent",
+            origin_price=250.0,
+            description="This is a test product",
+            detail="Detailed description of the test product",
+            product_code="SINGLE123",
+        )
+        options = [
+            OptionDTO(
+                color="Red",
+                color_code="#FF0000",
+                sizes=[SizeOptionDTO(size="S", stock=10), SizeOptionDTO(size="M", stock=20)],
+            ),
+        ]
+        image_mapping = {"#FF0000": ["red_image1.jpg", "red_image2.jpg"]}
+
+        product_create_dto = ProductWithOptionCreateRequestDTO(
+            category_id=self.category.id,
+            product=product,
+            options=options,
+            image_mapping=image_mapping,
+        )
+
+        files = []  # 이미지 업로드 파일 리스트
+
+        await ProductService.create_product_with_options(
+            product_create_dto=product_create_dto,
+            files=files,
+            upload_dir="/tmp/test_uploads",
+        )
+
+        # Then: 데이터베이스에서 생성된 상품 검증
+        created_product = await Product.get(product_code="SINGLE123")
+        assert created_product.name == "Single Option Product"
+
+        created_options = await Option.filter(product=created_product).all()
+        assert len(created_options) == 2
+        assert created_options[0].color == "Red"
+        assert created_options[0].color_code == "#FF0000"
+
+        created_counts = await CountProduct.filter(product=created_product).all()
+        assert len(created_counts) == 2
+        assert created_counts[0].count == 10
+        assert created_counts[1].count == 20
+
+    async def test_create_product_with_multiple_options(self):
+        # Given: 상품 생성 요청 DTO (옵션이 여러 개인 경우)
         product_data = {
-            "name": "New Product",
-            "price": 200.0,
-            "discount": 20.0,
+            "name": "Multiple Options Product",
+            "price": 300.0,
+            "discount": 50.0,
             "discount_option": "amount",
-            "origin_price": 220.0,
-            "description": "New product description",
+            "origin_price": 350.0,
+            "description": "Multiple options product description",
             "detail": "Detailed description",
-            "product_code": "NEW123",
+            "product_code": "MULTI123",
         }
 
         options_data = [
             {
-                "color": "Green",
-                "color_code": "#00FF00",
-                "sizes": [{"size": "M", "stock": 30}, {"size": "L", "stock": 40}],
-            }
+                "color": "Blue",
+                "color_code": "#0000FF",
+                "sizes": [{"size": "S", "stock": 10}, {"size": "M", "stock": 15}],
+            },
+            {
+                "color": "Yellow",
+                "color_code": "#FFFF00",
+                "sizes": [{"size": "L", "stock": 20}, {"size": "XL", "stock": 25}],
+            },
         ]
 
-        image_mapping = {"#00FF00": ["green_image_1.jpg", "green_image_2.jpg"]}
+        image_mapping = {
+            "#0000FF": ["blue_image_1.jpg", "blue_image_2.jpg"],
+            "#FFFF00": ["yellow_image_1.jpg"],
+        }
         files = []  # 이미지 업로드 파일 리스트
 
         product_create_dto = {
@@ -103,7 +164,6 @@ class TestProductService(TestCase):
             "image_mapping": image_mapping,
         }
 
-        # When: ProductService.create_product_with_options 호출
         await ProductService.create_product_with_options(
             product_create_dto=product_create_dto,
             files=files,
@@ -111,13 +171,62 @@ class TestProductService(TestCase):
         )
 
         # Then: 데이터베이스에서 생성된 상품 검증
-        created_product = await Product.get(product_code="NEW123")
-        assert created_product.name == "New Product"
+        created_product = await Product.get(product_code="MULTI123")
+        assert created_product.name == "Multiple Options Product"
 
-        # DTO로 변환하여 응답 시뮬레이션
-        created_product_dto = ProductDTO.model_validate(created_product)
-        assert created_product_dto.name == "New Product"
-        assert created_product_dto.product_code == "NEW123"
+        created_options = await Option.filter(product=created_product).all()
+        assert len(created_options) == 4
+
+        created_counts = await CountProduct.filter(product=created_product).all()
+        assert len(created_counts) == 4
+        assert created_counts[0].count == 10
+        assert created_counts[1].count == 15
+        assert created_counts[2].count == 20
+        assert created_counts[3].count == 25
+
+        # OptionImage 검증
+        created_images = await OptionImage.filter(option__product=created_product).all()
+        assert len(created_images) == 3  # Blue 옵션에 2개, Yellow 옵션에 1개 이미지
+        assert created_images[0].image_url == "/tmp/test_uploads/blue_image_1.jpg"
+        assert created_images[1].image_url == "/tmp/test_uploads/blue_image_2.jpg"
+        assert created_images[2].image_url == "/tmp/test_uploads/yellow_image_1.jpg"
+
+        # 옵션 1 검증
+        assert created_options[0].color == "Blue"
+        assert created_options[0].color_code == "#0000FF"
+        assert created_options[0].size == "S"
+
+        # 옵션 2 검증
+        assert created_options[1].color == "Blue"
+        assert created_options[1].color_code == "#0000FF"
+        assert created_options[1].size == "M"
+
+        # 옵션 3 검증
+        assert created_options[2].color == "Yellow"
+        assert created_options[2].color_code == "#FFFF00"
+        assert created_options[2].size == "L"
+
+        assert created_product.name == "Multiple Options Product"
+        assert created_product.price == 300.0
+        assert created_product.discount == 50.0
+        assert created_product.discount_option == "amount"
+        assert created_product.origin_price == 350.0
+        assert created_product.description == "Multiple options product description"
+        assert created_product.detail == "Detailed description"
+        assert created_product.product_code == "MULTI123"
+
+        # 재고 검증
+        assert created_counts[0].option.size == "S"
+        assert created_counts[0].count == 10
+
+        assert created_counts[1].option.size == "M"
+        assert created_counts[1].count == 15
+
+        assert created_counts[2].option.size == "L"
+        assert created_counts[2].count == 20
+
+        assert created_counts[3].option.size == "XL"
+        assert created_counts[3].count == 25
 
     async def test_delete_product(self):
         # When: ProductService.delete_product 호출
