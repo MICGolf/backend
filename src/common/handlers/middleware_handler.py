@@ -14,6 +14,10 @@ def attach_middleware_handlers(app: FastAPI) -> None:
         "https://211.188.61.243:5173",
         "http://211.188.61.243:8000",
         "https://211.188.61.243:8000",
+        "http://www.micgolf.shop/docs",
+        "http://micgolf.kro.kr",
+        "https://www.micgolf.shop/docs",
+        "https://micgolf.kro.kr",
     ]
 
     app.add_middleware(
