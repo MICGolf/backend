@@ -26,7 +26,8 @@ class PageResponse(BaseModel, Generic[T]):
 
 
 class BannerResponse(BaseModel):
-    """배너 응답 DTO """
+    """배너 응답 DTO"""
+
     id: int = Field(..., description="배너 ID")
     title: str = Field(..., description="배너 제목")
     sub_title: str = Field(..., description="배너 소제목", alias="subTitle")

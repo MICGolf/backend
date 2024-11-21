@@ -19,13 +19,14 @@ class BannerType(StrEnum):
 
 class Banner(BaseModel):
     """배너 모델"""
+
     title = fields.CharField(max_length=255, description="배너 제목")
     sub_title = fields.CharField(max_length=255, description="배너 소제목")
     image_url = fields.CharField(max_length=255, description="배너 이미지 URL")
     event_url = fields.CharField(max_length=255, description="이벤트 URL")
-    is_active = fields.BooleanField(default=True, description="활성화 상태") # 기본값 True
+    is_active = fields.BooleanField(default=True, description="활성화 상태")  # 기본값 True
     category_type = fields.CharEnumField(BannerType, max_length=20, description="배너 타입")
-    display_order = fields.IntField(default=1, description="표시 순서") # 1부터 시작
+    display_order = fields.IntField(default=1, description="표시 순서")  # 1부터 시작
 
     class Meta:
         table = "banner"
