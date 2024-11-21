@@ -20,5 +20,5 @@ app.add_event_handler("startup", startup_event)
 
 
 @app.get("/health-check")
-async def health_check():
+async def health_check() -> dict[str, str]:
     return {"status": "ok"}
