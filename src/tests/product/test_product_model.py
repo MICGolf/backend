@@ -1,5 +1,6 @@
 from tortoise.contrib.test import TestCase
-from app.product.models.product import Product, Option, OptionImage, CountProduct, DiscountOption
+
+from app.product.models.product import CountProduct, DiscountOption, Option, OptionImage, Product
 
 
 class TestProductModels(TestCase):

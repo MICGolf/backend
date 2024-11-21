@@ -1,7 +1,7 @@
 from httpx import AsyncClient
 from tortoise.contrib.test import TestCase
 
-from app.product.models.product import Product, DiscountOption
+from app.product.models.product import DiscountOption, Product
 from main import app
 
 

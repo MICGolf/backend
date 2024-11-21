@@ -1,10 +1,9 @@
 from tortoise.contrib.test import TestCase
 
-from app.product.dtos.request import ProductWithOptionCreateRequestDTO, SizeOptionDTO, OptionDTO, ProductDTO
-from app.product.models.product import Product, Option, CountProduct, OptionImage
 from app.category.models.category import Category, CategoryProduct
+from app.product.dtos.request import OptionDTO, ProductDTO, ProductWithOptionCreateRequestDTO, SizeOptionDTO
 from app.product.dtos.response import ProductResponseDTO
-
+from app.product.models.product import CountProduct, Option, OptionImage, Product
 from app.product.services.product_service import ProductService
 
 
