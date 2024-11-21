@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
-from common.middlewares.custom_response_middleware import CommonResponseMiddleware
+# from common.middlewares.custom_response_middleware import CommonResponseMiddleware
 
 
 def attach_middleware_handlers(app: FastAPI) -> None:
@@ -23,4 +23,4 @@ def attach_middleware_handlers(app: FastAPI) -> None:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    app.add_middleware(CommonResponseMiddleware)
+    # app.add_middleware(CommonResponseMiddleware)
