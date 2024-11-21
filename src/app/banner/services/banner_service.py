@@ -150,6 +150,16 @@ class BannerService:
         2. 새 파일명 생성 (타임스탬프 포함)
         3. 이미지 최적화 (RGB 변환, JPEG 압축)
         4. 파일 저장
+
+        Args:
+            image: 업로드된 이미지 파일
+            old_image_path: 기존 이미지 경로
+
+        Returns:
+            Tuple[저장된 파일 경로, 파일명]
+
+        Raises:
+            HTTPException: 이미지 처리 실패 시 (400)
         """
         try:
             if old_image_path and os.path.exists(old_image_path):
