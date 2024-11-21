@@ -10,7 +10,7 @@ class PromotionProductService:
     @staticmethod
     async def get_promotion_products(
         promotion_type: str, page: int = 1, size: int = 10
-    ) -> dict[str, int | list[dict[str, Any]]]:
+    ) -> PromotionProductListResponse:
         # 페이지네이션 계산
         skip = (page - 1) * size
 
@@ -24,9 +24,9 @@ class PromotionProductService:
         items = await query.offset(skip).limit(size)
 
         # 응답을 PromotionProductResponse 모델로 반환
-        return {
-            "items": [PromotionProductResponse.model_validate(item, from_attributes=True).dict() for item in items],
-            "total": total,
-            "page": page,
-            "size": size,
-        }
+        return PromotionProductListResponse(
+            items=[PromotionProductResponse.model_validate(item, from_attributes=True) for item in items],
+            total=total,
+            page=page,
+            size=size,
+        )

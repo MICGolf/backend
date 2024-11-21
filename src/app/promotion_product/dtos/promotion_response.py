@@ -12,12 +12,6 @@ class PromotionProductResponse(BaseModel):
     is_active: bool
 
 
-class ProductResponse(BaseModel):
-    id: int
-    name: str
-    price: float
-
-
 class PromotionProductListResponse(BaseModel):
     items: list[PromotionProductResponse]
     total: int

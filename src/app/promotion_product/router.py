@@ -13,7 +13,7 @@ async def get_promotion_products_route(
     promotion_type: str = Query(..., description="Promotion type: 'best' or 'md_pick'"),
     page: int = Query(1, ge=1),
     size: int = Query(10, ge=1, le=100),
-) -> dict[str, int | list[dict[str, Any]]]:
+) -> PromotionProductListResponse:
     if promotion_type not in ["best", "md_pick"]:
         raise HTTPException(status_code=400, detail="Invalid promotion type. Choose 'best' or 'md_pick'.")
 
