@@ -8,7 +8,8 @@ def attach_middleware_handlers(app: FastAPI) -> None:
     origins = [
         "http://localhost:5173",
         "https://localhost:5173",
-        "http://111.111.111.111:8000",  # 특정 포트 포함
+        "http://localhost:8000",
+        "https://localhost:8000",
         "http://211.188.61.243:5173",
         "https://211.188.61.243:5173",
         "http://211.188.61.243:8000",
