@@ -1,7 +1,7 @@
 import os
 
-import boto3  # type: ignore
-from botocore.exceptions import ClientError, NoCredentialsError  # type: ignore
+import boto3
+from botocore.exceptions import ClientError, NoCredentialsError
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -10,8 +10,8 @@ load_dotenv()
 class ObjectStorageClient:
     def __init__(self) -> None:
         self.s3_client = boto3.client(
-            "s3",
-            aws_access_key=os.getenv("AWS_ACCESS_KEY"),
+            service_name="s3",
+            aws_access_key_id=os.getenv("AWS_ACCESS_KEY"),
             aws_secret_access_key=os.getenv("AWS_SECRET_KEY"),
             region_name=os.getenv("REGION_NAME"),
             endpoint_url=os.getenv("ENDPOINT_URL"),
