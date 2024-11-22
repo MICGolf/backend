@@ -13,6 +13,15 @@ class CategoryResponse(BaseModel):
     updated_at: datetime
 
 
+class CategoryTreeResponse(BaseModel):
+    id: int
+    name: str
+    depth: int
+    created_at: datetime
+    updated_at: datetime
+    children: List["CategoryTreeResponse"] = []
+
+
 class CategoryWithSubcategoriesResponse(CategoryResponse):
     subcategories: List["CategoryWithSubcategoriesResponse"] = []
 

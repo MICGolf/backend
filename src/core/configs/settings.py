@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     DB_PORT: int = 3306
     DB_USER: str = "root"
     DB_PASSWORD: str = "1234"
-    DB_NAME: str = "micgolf"
+    DB_NAME: str = "local_db"
 
     PROJECT_ROOT: str = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
 
@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     AWS_STORAGE_BUCKET_NAME: str = "your-bucket-name"
 
     class Config:
-        env_file = f".env.{os.getenv('ENV', 'local')}"  # 로드할 .env 파일 결정
+        env_file = f".env.local.{os.getenv('ENV', 'local')}"  # 로드할 .env.local 파일 결정
         env_file_encoding = "utf-8"
 
     @property
