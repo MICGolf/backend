@@ -63,7 +63,7 @@ class ProductService:
             order=order,
         )
 
-        product_map = {product.id: ProductDTO.model_validate(product) for product in products}  # type: ignore[attr-defined]
+        product_map = {product.id: ProductDTO.model_validate(product) for product in products}
         product_options_map: dict[int | None, list[OptionDTO]] = {product_id: [] for product_id in product_map.keys()}
 
         for product_id, group_options in itertools.groupby(
@@ -231,7 +231,7 @@ class ProductService:
         order_by = f"-{sort}" if order == "desc" else sort
 
         products = await Product.filter(filters).offset(offset).limit(limit).order_by(order_by)
-        product_ids = [product.id for product in products]  # type: ignore[attr-defined]
+        product_ids = [product.id for product in products]
         options = await Option.get_by_product_ids(product_ids=product_ids)
 
         return products, options

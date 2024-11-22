@@ -7,7 +7,7 @@ from main import app
 
 
 class TestPromotionProductRouter(TestCase):
-    async def asyncSetUp(self):
+    async def asyncSetUp(self) -> None:
         await super().asyncSetUp()
         # product, promotion 생성
         self.product = await Product.create(

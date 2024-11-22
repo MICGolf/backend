@@ -12,6 +12,7 @@ class DiscountOption(StrEnum):
 
 
 class Product(BaseModel):
+    id = fields.IntField(pk=True)
     name = fields.CharField(max_length=255)
     price = fields.DecimalField(max_digits=10, decimal_places=2)
     discount = fields.DecimalField(max_digits=5, decimal_places=2, default=0.00)
