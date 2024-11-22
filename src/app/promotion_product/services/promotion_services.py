@@ -28,7 +28,7 @@ class PromotionProductService:
             items=[
                 PromotionProductResponse.model_validate(
                     {
-                        "id": item.id,  # type: ignore
+                        "id": item.id,
                         "product_id": item.product.id,
                         "product_name": item.product.name,
                         "price": item.product.price,

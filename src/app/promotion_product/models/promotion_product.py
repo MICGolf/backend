@@ -11,6 +11,7 @@ class PromotionType(str, Enum):
 
 
 class PromotionProduct(BaseModel):
+    id = fields.IntField(pk=True)
     product = fields.ForeignKeyField(
         "models.Product", related_name="promotion", on_delete=fields.CASCADE
     )  # type: ignore
