@@ -1,5 +1,3 @@
-from typing import Any
-
 from fastapi import APIRouter, HTTPException, Query
 
 from app.promotion_product.dtos.promotion_response import PromotionProductListResponse
