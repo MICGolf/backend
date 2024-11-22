@@ -1,5 +1,5 @@
 # app/category/routes/category_router.py
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from fastapi import APIRouter, Path, Query
 
@@ -43,7 +43,7 @@ async def delete_category(category_id: int = Path(..., description="카테고리
 
 
 @router.get("/{category_id}/ancestors", response_model=dict)
-async def get_category_ancestors(category_id: int = Path(...)) -> dict:
+async def get_category_ancestors(category_id: int = Path(...)) -> dict[str, Any]:
     return await CategoryService.get_category_with_ancestors(category_id)
 
 

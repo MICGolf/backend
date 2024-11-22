@@ -106,7 +106,7 @@ class CategoryService:
         return await Category.filter(Q(id=category_id) | Q(parent_id=category_id)).values_list("id", flat=True)
 
     @staticmethod
-    async def get_category_with_ancestors(category_id: int) -> dict:
+    async def get_category_with_ancestors(category_id: int) -> dict[str, Any]:
         category = await Category.get_or_none(id=category_id)
         if not category:
             raise HTTPException(status_code=404, detail="Category not found")
