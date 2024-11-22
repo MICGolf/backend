@@ -25,7 +25,20 @@ class PromotionProductService:
 
         # 응답을 PromotionProductResponse 모델로 반환
         return PromotionProductListResponse(
-            items=[PromotionProductResponse.model_validate(item, from_attributes=True) for item in items],
+            items=[
+                PromotionProductResponse.model_validate(
+                    {
+                        "id": item.id,
+                        "product_id": item.product.id,
+                        "product_name": item.product.name,
+                        "price": item.product.price,
+                        "promotion_type": item.promotion_type,
+                        "is_active": item.is_active,
+                    },
+                    from_attributes=True,
+                )
+                for item in items
+            ],
             total=total,
             page=page,
             size=size,
