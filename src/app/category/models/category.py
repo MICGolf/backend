@@ -4,6 +4,7 @@ from common.models.base_model import BaseModel
 
 
 class Category(BaseModel):
+    id = fields.IntField(pk=True)
     name = fields.CharField(max_length=255)
     parent = fields.ForeignKeyField(
         "models.Category",

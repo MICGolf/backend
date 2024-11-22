@@ -6,7 +6,7 @@ from main import app
 
 
 class TestProductRouter(TestCase):
-    async def asyncSetUp(self):
+    async def asyncSetUp(self) -> None:
         await super().asyncSetUp()  # ORM 초기화
         self.test_product = await Product.create(
             name="Test Product",

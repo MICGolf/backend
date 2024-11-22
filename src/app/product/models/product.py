@@ -1,6 +1,7 @@
 from enum import StrEnum
 
 from tortoise import fields
+from tortoise.fields import ReverseRelation
 from tortoise.functions import Sum
 
 from common.models.base_model import BaseModel
@@ -33,10 +34,14 @@ class Product(BaseModel):
 
 
 class Option(BaseModel):
+    id = fields.IntField(pk=True)
     size = fields.CharField(max_length=255)
     color = fields.CharField(max_length=255)
     color_code = fields.CharField(max_length=255, null=True)
-    product = fields.ForeignKeyField("models.Product", related_name="options", on_delete=fields.CASCADE)  # type: ignore
+    product: fields.ForeignKeyRelation["Product"] = fields.ForeignKeyField(
+        "models.Product", related_name="options", on_delete=fields.CASCADE
+    )
+    images: ReverseRelation["OptionImage"]
 
     class Meta:
         table = "option"
@@ -64,15 +69,21 @@ class Option(BaseModel):
 
 class OptionImage(BaseModel):
     image_url = fields.CharField(max_length=255)
-    option = fields.ForeignKeyField("models.Option", related_name="images", on_delete=fields.CASCADE)  # type: ignore
+    option: fields.ForeignKeyRelation["Option"] = fields.ForeignKeyField(
+        "models.Option", related_name="images", on_delete=fields.CASCADE
+    )
 
     class Meta:
         table = "option_image"
 
 
 class CountProduct(BaseModel):
-    product = fields.ForeignKeyField("models.Product", related_name="product_stock", on_delete=fields.CASCADE)  # type: ignore
-    option = fields.ForeignKeyField("models.Option", related_name="option_stock", on_delete=fields.CASCADE)  # type: ignore
+    product: fields.ForeignKeyRelation["Product"] = fields.ForeignKeyField(
+        "models.Product", related_name="product_stock", on_delete=fields.CASCADE
+    )
+    option: fields.ForeignKeyRelation["Option"] = fields.ForeignKeyField(
+        "models.Option", related_name="option_stock", on_delete=fields.CASCADE
+    )
     count = fields.IntField(default=0)
 
     class Meta:

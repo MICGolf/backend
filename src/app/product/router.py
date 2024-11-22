@@ -80,7 +80,6 @@ async def create_products_handler(
     return await ProductService.create_product_with_options(
         product_create_dto=ProductWithOptionCreateRequestDTO(**request_data),
         files=files,
-        upload_dir=settings.UPLOAD_DIR,
     )
 
 

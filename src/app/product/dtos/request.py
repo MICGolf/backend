@@ -36,6 +36,7 @@ class ProductDTO(BaseModel):
     description: str
     detail: str
     product_code: str
+    status: str = Field(default="Y", description="판매 상태 (예: Y, N 등)")
 
     class Config:
         json_schema_extra = PRODUCT_CREATE_SCHEMA
@@ -62,8 +63,10 @@ class ProductFilterRequestDTO(BaseModel):
 
     @model_validator(mode="after")
     def validate_date_range(self) -> "ProductFilterRequestDTO":
-        if self.start_date and self.end_date and self.start_date > self.end_date:
-            raise ValueError("start_date는 end_date보다 빠를 수 없습니다.")
+        # 명시적으로 타입 체크
+        if self.start_date is not None and self.end_date is not None:
+            if self.start_date > self.end_date:
+                raise ValueError("start_date는 end_date보다 빠를 수 없습니다.")
         return self
 
 
