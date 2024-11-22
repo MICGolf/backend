@@ -1,20 +1,19 @@
-import os
+from io import BytesIO
 
 import boto3
 from botocore.exceptions import ClientError, NoCredentialsError
-from dotenv import load_dotenv
 
-load_dotenv()
+from core.configs import settings
 
 
 class ObjectStorageClient:
     def __init__(self) -> None:
         self.s3_client = boto3.client(
             service_name="s3",
-            aws_access_key_id=os.getenv("AWS_ACCESS_KEY"),
-            aws_secret_access_key=os.getenv("AWS_SECRET_KEY"),
-            region_name=os.getenv("REGION_NAME"),
-            endpoint_url=os.getenv("ENDPOINT_URL"),
+            aws_access_key_id=settings.AWS_ACCESS_KEY,
+            aws_secret_access_key=settings.AWS_SECRET_KEY,
+            region_name=settings.REGION_NAME,
+            endpoint_url=settings.ENDPOINT_URL,
         )
 
     def create_bucket(self, bucket_name: str) -> bool:
@@ -47,6 +46,22 @@ class ObjectStorageClient:
         except ClientError as e:
             print(f"Failed to upload file '{file_path}': {e}")
             return None
+
+    def upload_file_obj(self, bucket_name: str, file_obj: BytesIO, object_name: str) -> str | None:
+        """파일 객체를 특정 버킷에 업로드"""
+        try:
+            self._upload(bucket_name=bucket_name, file_obj=file_obj, object_name=object_name)
+            print(f"{object_name} 파일이 {bucket_name}에 업로드되었습니다.")
+            return f"{self.s3_client.meta.endpoint_url}/{bucket_name}/{object_name}"
+        except NoCredentialsError:
+            print("Credentials not available.")
+            return None
+        except ClientError as e:
+            print(f"Failed to upload file '{object_name}': {e}")
+            return None
+
+    def _upload(self, bucket_name: str, file_obj: BytesIO, object_name: str) -> None:
+        self.s3_client.upload_fileobj(file_obj, bucket_name, object_name, ExtraArgs={"ACL": "public-read"})
 
     def find_bucket(self, bucket_name: str) -> None:
         """지정된 버킷의 모든 객체와 최상위 폴더 및 파일 목록을 출력"""

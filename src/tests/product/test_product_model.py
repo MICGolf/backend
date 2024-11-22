@@ -4,7 +4,7 @@ from app.product.models.product import CountProduct, DiscountOption, Option, Opt
 
 
 class TestProductModels(TestCase):
-    async def asyncSetUp(self):
+    async def asyncSetUp(self) -> None:
         await super().asyncSetUp()  # ORM 초기화
         self.product = await Product.create(
             name="Test Product",
@@ -25,36 +25,40 @@ class TestProductModels(TestCase):
         await OptionImage.create(image_url="http://example.com/image1.jpg", option=self.option1)
         await OptionImage.create(image_url="http://example.com/image2.jpg", option=self.option2)
 
-    async def test_get_by_id(self):
+    async def test_get_by_id(self) -> None:
         product = await Product.get_by_id(self.product.id)
         assert product.name == "Test Product"
         assert product.price == 100.00
 
-    async def test_get_with_stock_and_images_by_product_id(self):
+    async def test_get_with_stock_and_images_by_product_id(self) -> None:
         options = await Option.get_with_stock_and_images_by_product_id(self.product.id)
         assert len(options) == 2
-        assert options[0].stock == 10
-        assert options[1].stock == 20
+        assert options[0].stock == 10  # type: ignore[attr-defined]
+        assert options[1].stock == 20  # type: ignore[attr-defined]
 
-    async def test_get_all_with_stock_and_images(self):
+    async def test_get_all_with_stock_and_images(self) -> None:
         options = await Option.get_all_with_stock_and_images()
         assert len(options) >= 2
-        assert options[0].stock == 10
-        assert options[1].stock == 20
+        assert options[0].stock == 10  # type: ignore[attr-defined]
+        assert options[1].stock == 20  # type: ignore[attr-defined]
 
-    async def test_get_by_product_ids(self):
+    async def test_get_by_product_ids(self) -> None:
         options = await Option.get_by_product_ids([self.product.id])
         assert len(options) == 2
         assert options[0].size == "M"
         assert options[1].size == "L"
 
-    async def test_option_images(self):
+    async def test_option_images(self) -> None:
         images = await OptionImage.filter(option=self.option1).all()
         assert len(images) == 1
         assert images[0].image_url == "http://example.com/image1.jpg"
 
-    async def test_count_product(self):
+    async def test_count_product(self) -> None:
         count1 = await CountProduct.filter(product=self.product, option=self.option1).first()
         count2 = await CountProduct.filter(product=self.product, option=self.option2).first()
+
+        assert count1 is not None, "CountProduct for option1 was not found"
+        assert count2 is not None, "CountProduct for option2 was not found"
+
         assert count1.count == 10
         assert count2.count == 20

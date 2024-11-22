@@ -3,7 +3,9 @@ import itertools
 import os
 import unicodedata
 from datetime import datetime
+from io import BytesIO
 from typing import Optional
+from uuid import uuid4
 
 from fastapi import UploadFile
 from tortoise.expressions import Q
@@ -18,6 +20,8 @@ from app.product.dtos.request import (
 )
 from app.product.dtos.response import OptionDTO, OptionImageDTO, ProductDTO, ProductResponseDTO
 from app.product.models.product import CountProduct, Option, OptionImage, Product
+from common.utils.ncp_s3_client import get_object_storage_client
+from core.configs import settings
 
 
 class ProductService:
@@ -88,18 +92,14 @@ class ProductService:
         for option in options:
             if option.color_code not in color_options_map:
                 color_options_map[option.color_code] = {
-                    "id": option.id,  # type: ignore[attr-defined]
+                    "id": option.id,
                     "color": option.color,
                     "color_code": option.color_code,
-                    "images": [
-                        OptionImageDTO.model_validate(image) for image in option.images  # type: ignore[attr-defined]
-                    ],
+                    "images": [OptionImageDTO.model_validate(image) for image in option.images],
                     "sizes": [],
                 }
 
-            color_options_map[option.color_code]["sizes"].append(
-                {"size": option.size, "stock": option.stock}  # type: ignore[attr-defined]
-            )
+            color_options_map[option.color_code]["sizes"].append({"size": option.size, "stock": option.stock})  # type: ignore[attr-defined]
 
         return [OptionDTO.model_validate(color) for color in color_options_map.values()]
 
@@ -108,7 +108,6 @@ class ProductService:
         cls,
         product_create_dto: ProductWithOptionCreateRequestDTO,
         files: list[UploadFile],
-        upload_dir: str,
     ) -> None:
 
         product_dto = product_create_dto.product
@@ -149,7 +148,7 @@ class ProductService:
             for size_option in option_dto.sizes
         ]
 
-        option_image_entries = await cls._process_images(created_options, image_mapping, files, upload_dir)
+        option_image_entries = await cls._process_images(created_options, image_mapping, files)
 
         await asyncio.gather(
             CountProduct.bulk_create(count_products_to_create), OptionImage.bulk_create(option_image_entries)
@@ -160,9 +159,8 @@ class ProductService:
         options: list[Option],
         image_mapping: dict[str, list[str]],
         files: list[UploadFile],
-        upload_dir: str,
     ) -> list[OptionImage]:
-
+        object_storage_client = get_object_storage_client()
         option_image_entries = []
 
         for option in options:
@@ -180,13 +178,20 @@ class ProductService:
                     )
 
                     if matching_file:
-                        os.makedirs(upload_dir, exist_ok=True)
-                        file_path = os.path.join(upload_dir, matching_file.filename or "")
+                        unique_file_name = f"{uuid4()}_{matching_file.filename}"
+                        bucket_name = settings.AWS_STORAGE_BUCKET_NAME
 
-                        with open(file_path, "wb") as f:
-                            f.write(await matching_file.read())
+                        # 파일 업로드
+                        file_obj = BytesIO(await matching_file.read())
+                        uploaded_url = object_storage_client.upload_file_obj(
+                            bucket_name=bucket_name,
+                            file_obj=file_obj,
+                            object_name=f"images/{unique_file_name}",
+                        )
 
-                        option_image_entries.append(OptionImage(option=option, image_url=file_path))
+                        if uploaded_url:
+                            option_image_entries.append(OptionImage(option=option, image_url=uploaded_url))
+
         return option_image_entries
 
     @staticmethod
@@ -296,7 +301,7 @@ class ProductService:
         tasks = []
 
         if options_to_delete:
-            tasks.append(Option.filter(pk__in=[opt.id for opt in options_to_delete]).delete())  # type: ignore
+            tasks.append(Option.filter(pk__in=[opt.id for opt in options_to_delete]).delete())
         if options_to_update:
             tasks.append(Option.bulk_update(options_to_update, fields=["color", "color_code", "size"]))  # type: ignore
         if options_to_create:
@@ -306,7 +311,7 @@ class ProductService:
             await asyncio.gather(*tasks)
 
         created_options = (
-            await Option.filter(product=product).exclude(id__in=[opt.id for opt in existing_options]).all()  # type: ignore
+            await Option.filter(product=product).exclude(id__in=[opt.id for opt in existing_options]).all()
         )
 
         return {
@@ -374,7 +379,7 @@ class ProductService:
             await img.delete()
 
         if files:
-            new_images = await cls._process_images(options, image_mapping, files, upload_dir)
+            new_images = await cls._process_images(options, image_mapping, files)
             await OptionImage.bulk_create(new_images)
 
     @classmethod

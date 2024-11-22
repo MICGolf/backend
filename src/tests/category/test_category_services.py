@@ -40,7 +40,7 @@ class TestCategoryService(TestCase):
 
     async def test_create_category_success(self) -> None:
         # given
-        request = CategoryCreateRequest(name="New Category")  # type: ignore
+        request = CategoryCreateRequest(name="New Category")
 
         # when
         response = await CategoryService.create_category(request)
