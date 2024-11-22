@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from app.product.example_schema.create_request_example import (
     OPTION_CREATE_SCHEMA,
@@ -59,6 +59,12 @@ class ProductFilterRequestDTO(BaseModel):
     category_id: Optional[int] = Field(None, description="카테고리 ID")
     start_date: Optional[datetime] = Field(None, description="검색 시작 날짜 (YYYY-MM-DD 형식)")
     end_date: Optional[datetime] = Field(None, description="검색 종료 날짜 (YYYY-MM-DD 형식)")
+
+    @model_validator(mode="after")
+    def validate_date_range(self) -> "ProductFilterRequestDTO":
+        if self.start_date and self.end_date and self.start_date > self.end_date:
+            raise ValueError("start_date는 end_date보다 빠를 수 없습니다.")
+        return self
 
 
 class BatchUpdateStatusRequest(BaseModel):

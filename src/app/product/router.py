@@ -85,7 +85,7 @@ async def create_products_handler(
 
 
 @router.patch(
-    "/products/status",
+    "/status",
     status_code=status.HTTP_200_OK,
     summary="상품 상태 업데이트 API",
     description="상품 상태를 업데이트합니다. status : 'Y' or 'N'",
