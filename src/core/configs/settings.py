@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     DB_PORT: int = 3306
     DB_USER: str = "root"
     DB_PASSWORD: str = "1234"
-    DB_NAME: str = "local_db"
+    DB_NAME: str = "micgolf"
 
     PROJECT_ROOT: str = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
 

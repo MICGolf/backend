@@ -75,7 +75,7 @@ class TestCategoryService(TestCase):
     async def test_update_category_success(self) -> None:
         # given
         category = await Category.create(name="Old Name")
-        request = CategoryUpdateRequest(name="New Name")  # type: ignore
+        request = CategoryUpdateRequest(name="New Name")
 
         # when
         response = await CategoryService.update_category(category.pk, request)
