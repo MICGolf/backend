@@ -7,7 +7,7 @@ from app.promotion_product.services.promotion_services import PromotionProductSe
 
 
 class TestPromotionProductService(TestCase):
-    async def asyncSetUp(self):
+    async def asyncSetUp(self) -> None:
         await super().asyncSetUp()
 
         # 샘플 데이터 생성

@@ -7,11 +7,12 @@ from app.promotion_product.models.promotion_product import PromotionProduct, Pro
 
 
 class TestPromotionProductModel(TestCase):
-    async def asyncSetUp(self):
+    async def asyncSetUp(self) -> None:
         await super().asyncSetUp()
         # Given: product 생성
         product_code = uuid.uuid4().hex[:8]
         self.product = await Product.create(
+            id=self.id,
             name="Test Product",
             price=100.00,
             discount=10.00,
@@ -35,7 +36,7 @@ class TestPromotionProductModel(TestCase):
         assert promotion.promotion_type == PromotionType.BEST
         assert promotion.is_active is True
 
-    async def test_read_promotion_product(self):
+    async def test_read_promotion_product(self) -> None:
         """Promotion_product 조회"""
         # Given
         product = await Product.create(
@@ -61,7 +62,7 @@ class TestPromotionProductModel(TestCase):
         assert fetched_promotion.promotion_type == PromotionType.MD_PICK
         assert fetched_promotion.is_active is True
 
-    async def test_update_promotion_product(self):
+    async def test_update_promotion_product(self) -> None:
         """Promotion_product 업데이트"""
         # Given
         product = await Product.create(
@@ -89,7 +90,7 @@ class TestPromotionProductModel(TestCase):
         assert updated_promotion.is_active is False
         assert updated_promotion.promotion_type == PromotionType.BEST
 
-    async def test_delete_promotion_product(self):
+    async def test_delete_promotion_product(self) -> None:
         """Promotion_product 삭제"""
         # Given
         product = await Product.create(
