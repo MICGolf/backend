@@ -1,10 +1,10 @@
 # app/category/routes/category_router.py
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from fastapi import APIRouter, Path, Query
 
-from app.category.dtos.category_request import CategoryCreateRequest, CategoryUpdateRequest
-from app.category.dtos.category_response import CategoryResponse
+from app.category.dtos.category_request import CategoryCreateRequest, CategoryCreateTreeRequest, CategoryUpdateRequest
+from app.category.dtos.category_response import CategoryResponse, CategoryTreeResponse
 from app.category.services.category_services import CategoryService
 
 router = APIRouter(prefix="/category", tags=["카테고리"])
@@ -40,3 +40,13 @@ async def update_category(
 @router.delete("/{category_id}", status_code=204, summary="카테고리 삭제")
 async def delete_category(category_id: int = Path(..., description="카테고리 ID")) -> None:
     await CategoryService.delete_category(category_id)
+
+
+@router.get("/{category_id}/ancestors", response_model=dict)
+async def get_category_ancestors(category_id: int = Path(...)) -> dict[str, Any]:
+    return await CategoryService.get_category_with_ancestors(category_id)
+
+
+@router.post("/tree", response_model=List[CategoryTreeResponse], status_code=201, summary="카테고리 트리 생성")
+async def create_category_tree(request: CategoryCreateTreeRequest) -> List[CategoryTreeResponse]:
+    return await CategoryService.create_category_tree(request)

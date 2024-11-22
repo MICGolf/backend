@@ -35,24 +35,29 @@ jobs:
 
       - name: Install Poetry
         run: |
+          
           curl -sSL https://install.python-poetry.org | python3 -
           echo "${HOME}/.local/bin" >> $GITHUB_PATH
 
       - name: Install dependencies
         run: |
+          cd src
           poetry install
 
       - name: Run black
         run: |
-          poetry run black src --check
+          cd src
+          poetry run black . --check
 
       - name: Run isort
         run: |
-          poetry run isort src --check --diff
+          cd src
+          poetry run isort . --check --diff
 
       - name: Run Mypy
         run: |
-          poetry run mypy src
+          cd src
+          poetry run mypy .
 
       - name: Run tests with pytest
         run: |

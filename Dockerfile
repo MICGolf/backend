@@ -20,7 +20,7 @@ ENV PYTHONPATH=/app/src:$PYTHONPATH
 WORKDIR /app/src
 
 # Poetry 설정 파일 복사
-COPY pyproject.toml poetry.lock ./
+COPY src/pyproject.toml src/poetry.lock ./
 
 # poetry.lock 파일 업데이트
 RUN poetry lock --no-update

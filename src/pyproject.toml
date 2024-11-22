@@ -47,7 +47,8 @@ build-backend = "poetry.core.masonry.api"
 python_version = "3.12"
 strict = true
 ignore_missing_imports = true
-exclude = "src/tests/"
+exclude = "tests/"
+plugins = ['pydantic.mypy']
 
 [[tool.mypy.overrides]]
 module = "PIL.*"

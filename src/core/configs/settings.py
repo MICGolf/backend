@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     AWS_STORAGE_BUCKET_NAME: str = "your-bucket-name"
 
     class Config:
-        env_file = f".env.{os.getenv('ENV', 'local')}"  # 로드할 .env 파일 결정
+        env_file = f".env.local.{os.getenv('ENV', 'local')}"  # 로드할 .env.local 파일 결정
         env_file_encoding = "utf-8"
 
     @property
