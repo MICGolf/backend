@@ -12,7 +12,6 @@ class TestPromotionProductModel(TestCase):
         # Given: product 생성
         product_code = uuid.uuid4().hex[:8]
         self.product = await Product.create(
-            id=self.id,
             name="Test Product",
             price=100.00,
             discount=10.00,
