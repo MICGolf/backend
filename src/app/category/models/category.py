@@ -19,6 +19,7 @@ class Category(BaseModel):
 
 
 class CategoryProduct(BaseModel):
+    id = fields.IntField(pk=True)
     category = fields.ForeignKeyField(
         "models.Category",
         related_name="category_product",

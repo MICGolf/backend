@@ -115,7 +115,6 @@ async def update_product_handler(
         product_id=product_id,
         product_update_dto=ProductWithOptionUpdateRequestDTO(**request_data),
         files=files,
-        upload_dir=settings.UPLOAD_DIR,
     )
 
 

@@ -47,10 +47,10 @@ class ObjectStorageClient:
             print(f"Failed to upload file '{file_path}': {e}")
             return None
 
-    def upload_file_obj(self, bucket_name: str, file_obj: BytesIO, object_name: str) -> str | None:
+    async def upload_file_obj(self, bucket_name: str, file_obj: BytesIO, object_name: str) -> str | None:
         """파일 객체를 특정 버킷에 업로드"""
         try:
-            self._upload(bucket_name=bucket_name, file_obj=file_obj, object_name=object_name)
+            await self._upload(bucket_name=bucket_name, file_obj=file_obj, object_name=object_name)
             print(f"{object_name} 파일이 {bucket_name}에 업로드되었습니다.")
             return f"{self.s3_client.meta.endpoint_url}/{bucket_name}/{object_name}"
         except NoCredentialsError:
@@ -60,7 +60,7 @@ class ObjectStorageClient:
             print(f"Failed to upload file '{object_name}': {e}")
             return None
 
-    def _upload(self, bucket_name: str, file_obj: BytesIO, object_name: str) -> None:
+    async def _upload(self, bucket_name: str, file_obj: BytesIO, object_name: str) -> None:
         self.s3_client.upload_fileobj(file_obj, bucket_name, object_name, ExtraArgs={"ACL": "public-read"})
 
     def find_bucket(self, bucket_name: str) -> None:
@@ -139,7 +139,7 @@ class ObjectStorageClient:
             print(f"{object_name} 다운로드에 실패하였습니다. {e}")
             return False
 
-    def delete_file(self, bucket_name: str, object_name: str) -> bool:
+    async def delete_file(self, bucket_name: str, object_name: str) -> bool:
         try:
             self.s3_client.delete_object(Bucket=bucket_name, Key=object_name)
             print(f"{object_name}이 삭제되었습니다.")

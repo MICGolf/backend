@@ -4,11 +4,12 @@ import os
 import unicodedata
 from datetime import datetime
 from io import BytesIO
-from typing import Optional
+from typing import Any, Coroutine, Optional, Union
 from uuid import uuid4
 
 from fastapi import UploadFile
 from tortoise.expressions import Q
+from tortoise.transactions import in_transaction
 
 from app.category.models.category import Category, CategoryProduct
 from app.category.services.category_services import CategoryService
@@ -162,35 +163,55 @@ class ProductService:
     ) -> list[OptionImage]:
         object_storage_client = get_object_storage_client()
         option_image_entries = []
+        upload_tasks = []
+        uploaded_urls_map: dict[Any, Any] = {}  # 색상별 업로드된 URL 캐싱
 
-        for option in options:
-            if option.color_code in image_mapping:
-                file_names = image_mapping[option.color_code]
+        # 파일 내용을 미리 읽어서 안전하게 복사
+        file_map = {}
+        for file in files:
+            content = await file.read()  # 파일 내용을 읽어 메모리에 저장
+            file_map[unicodedata.normalize("NFC", file.filename or "")] = BytesIO(content)
+
+        # 색상별로 이미지 업로드 작업 처리
+        for color_code, file_names in image_mapping.items():
+            if color_code not in uploaded_urls_map:  # 이미 처리되지 않은 색상만 처리
+                uploaded_urls_map[color_code] = []  # 색상별 업로드 URL 리스트 초기화
                 for file_name in file_names:
-                    matching_file = next(
-                        (
-                            file
-                            for file in files
-                            if unicodedata.normalize("NFC", file.filename or "")
-                            == unicodedata.normalize("NFC", file_name or "")
-                        ),
-                        None,
-                    )
+                    normalized_file_name = unicodedata.normalize("NFC", file_name or "")
+                    file_obj = file_map.get(normalized_file_name)
 
-                    if matching_file:
-                        unique_file_name = f"{uuid4()}_{matching_file.filename}"
+                    if file_obj:
+                        # 파일 포인터를 항상 처음으로 이동
+                        file_obj.seek(0)
+
+                        unique_file_name = f"{uuid4()}_{normalized_file_name}"
                         bucket_name = settings.AWS_STORAGE_BUCKET_NAME
 
-                        # 파일 업로드
-                        file_obj = BytesIO(await matching_file.read())
-                        uploaded_url = object_storage_client.upload_file_obj(
+                        upload_task = object_storage_client.upload_file_obj(
                             bucket_name=bucket_name,
                             file_obj=file_obj,
                             object_name=f"images/{unique_file_name}",
                         )
+                        upload_tasks.append((upload_task, color_code))  # 작업과 색상 코드 매핑
 
-                        if uploaded_url:
-                            option_image_entries.append(OptionImage(option=option, image_url=uploaded_url))
+        print(f"Number of upload tasks: {len(upload_tasks)}")
+
+        # 업로드 작업 수행 및 에러 처리
+        upload_results = await asyncio.gather(*[task[0] for task in upload_tasks], return_exceptions=True)
+
+        # 업로드 결과를 색상 코드별로 매핑
+        for result, (_, color_code) in zip(upload_results, upload_tasks):
+            if isinstance(result, Exception):
+                print(f"Error occurred during upload for color {color_code}: {result}")
+            else:
+                print(f"Uploaded URL: {result}")
+                uploaded_urls_map[color_code].append(result)
+
+        # 옵션과 업로드된 이미지를 연결
+        for option in options:
+            if option.color_code in uploaded_urls_map:
+                for uploaded_url in uploaded_urls_map[option.color_code]:
+                    option_image_entries.append(OptionImage(option=option, image_url=uploaded_url))
 
         return option_image_entries
 
@@ -253,9 +274,9 @@ class ProductService:
 
     @staticmethod
     async def _update_category(product: Product, new_category_id: int) -> None:
-        current_category_product = await CategoryProduct.filter(product=product).first()
+        current_category_product = await CategoryProduct.filter(product=product).prefetch_related("category").first()
 
-        if current_category_product and current_category_product.category_id == new_category_id:  # type: ignore[attr-defined]
+        if current_category_product and current_category_product.category.id == new_category_id:
             return
 
         if current_category_product:
@@ -365,18 +386,13 @@ class ProductService:
         options: list[Option],
         image_mapping: dict[str, list[str]],
         files: list[UploadFile],
-        upload_dir: str,
     ) -> None:
         existing_images = await OptionImage.filter(option__product=product).all()
+
         images_to_keep = {img for color_code in image_mapping for img in image_mapping[color_code]}
         images_to_delete = [img for img in existing_images if img.image_url not in images_to_keep]
 
-        for img in images_to_delete:
-            try:
-                os.remove(img.image_url)
-            except FileNotFoundError:
-                pass
-            await img.delete()
+        await cls._delete_images(images_to_delete)
 
         if files:
             new_images = await cls._process_images(options, image_mapping, files)
@@ -388,45 +404,52 @@ class ProductService:
         product_id: int,
         product_update_dto: ProductWithOptionUpdateRequestDTO,
         files: list[UploadFile],
-        upload_dir: str,
     ) -> None:
         # 1. 기본 정보 업데이트
         product = await cls._update_product_basic_info(product_id, product_update_dto.product)
 
         # 2. 카테고리 업데이트
         await cls._update_category(product, product_update_dto.category_id)
+
         # 3. 옵션 업데이트
         updated_options = await cls._update_options(product, product_update_dto.options)
 
-        # 4. 재고 업데이트
+        # # 4. 재고 업데이트
         await cls._update_stock(product, product_update_dto.options)
 
-        # 5. 이미지 업데이트
+        # # 5. 이미지 업데이트
         await cls._update_images(
             product,
             updated_options["created"] + updated_options["updated"],
             product_update_dto.image_mapping,
             files,
-            upload_dir,
         )
 
     @classmethod
     async def delete_product(cls, product_id: int) -> None:
+        async with in_transaction() as connection:
+            product = await Product.get(id=product_id)
 
-        product = await Product.get(id=product_id)
+            product_images = await OptionImage.filter(option__product=product).all()
 
-        await cls.delete_product_images(product_id)
+            await cls._delete_images(product_images)
 
-        await product.delete()
+            await product.delete()
 
     @classmethod
-    async def delete_product_images(cls, product_id: int) -> None:
-        images = await OptionImage.filter(option__product_id=product_id).all()
+    async def _delete_images(cls, images: list[OptionImage]) -> None:
+        if not images:
+            return
 
-        async def delete_image_file(image: OptionImage) -> None:
-            try:
-                os.remove(image.image_url)
-            except FileNotFoundError:
-                pass
+        object_storage_client = get_object_storage_client()
+        bucket_name = settings.AWS_STORAGE_BUCKET_NAME
 
-        await asyncio.gather(*(delete_image_file(image) for image in images))
+        delete_tasks: list[Coroutine[Any, Any, Union[bool, None]]] = []
+
+        for img in images:
+            object_name = img.image_url.split(f"{bucket_name}/")[-1]
+
+            delete_tasks.append(object_storage_client.delete_file(bucket_name, object_name))
+            delete_tasks.append(img.delete())
+
+        await asyncio.gather(*delete_tasks)
