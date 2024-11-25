@@ -10,3 +10,4 @@ class Cart(BaseModel):
 
     class Meta:
         table = "cart"
+        unique_together = ("user", "product")  # 유니크 제약조건
