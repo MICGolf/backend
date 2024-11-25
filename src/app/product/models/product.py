@@ -4,6 +4,7 @@ from tortoise import fields
 from tortoise.fields import ReverseRelation
 from tortoise.functions import Sum
 
+from app.category.models.category import CategoryProduct
 from common.models.base_model import BaseModel
 
 
@@ -24,6 +25,8 @@ class Product(BaseModel):
     brand = fields.CharField(max_length=255, default="micgolf")
     status = fields.CharField(max_length=1, default="Y")  # Y, N
     product_code = fields.CharField(max_length=255, unique=True)
+
+    categories: fields.ReverseRelation["CategoryProduct"]
 
     class Meta:
         table = "product"
@@ -68,6 +71,7 @@ class Option(BaseModel):
 
 
 class OptionImage(BaseModel):
+    id = fields.IntField(pk=True)
     image_url = fields.CharField(max_length=255)
     option: fields.ForeignKeyRelation["Option"] = fields.ForeignKeyField(
         "models.Option", related_name="images", on_delete=fields.CASCADE
@@ -78,6 +82,7 @@ class OptionImage(BaseModel):
 
 
 class CountProduct(BaseModel):
+    id = fields.IntField(pk=True)
     product: fields.ForeignKeyRelation["Product"] = fields.ForeignKeyField(
         "models.Product", related_name="product_stock", on_delete=fields.CASCADE
     )
