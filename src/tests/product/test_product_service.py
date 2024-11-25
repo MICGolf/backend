@@ -7,13 +7,17 @@ from fastapi import UploadFile
 from pydantic import ValidationError
 from tortoise.contrib.test import TestCase
 
-from app.category.models.category import Category
+from app.category.models.category import Category, CategoryProduct
 from app.product.dtos.request import (
     OptionDTO,
+    OptionUpdateDTO,
     ProductDTO,
     ProductFilterRequestDTO,
+    ProductUpdateDTO,
     ProductWithOptionCreateRequestDTO,
+    ProductWithOptionUpdateRequestDTO,
     SizeOptionDTO,
+    SizeOptionUpdateDTO,
 )
 from app.product.dtos.response import ProductResponseDTO
 from app.product.models.product import CountProduct, Option, OptionImage, Product
@@ -60,6 +64,11 @@ class TestProductService(TestCase):
             },
         )
 
+        files_1 = [
+            UploadFile(filename="red_image_1.jpg", file=BytesIO(b"mock red image content")),
+            UploadFile(filename="blue_image_1.jpg", file=BytesIO(b"mock blue image content")),
+        ]
+
         # 두 번째 상품 생성
         product_create_dto_2 = ProductWithOptionCreateRequestDTO(
             category_id=self.category_1.id,
@@ -91,6 +100,11 @@ class TestProductService(TestCase):
             },
         )
 
+        files_2 = [
+            UploadFile(filename="green_image.jpg", file=BytesIO(b"mock green image content")),
+            UploadFile(filename="yellow_image.jpg", file=BytesIO(b"mock yellow image content")),
+        ]
+
         # 세 번째 상품 생성
         product_create_dto_3 = ProductWithOptionCreateRequestDTO(
             category_id=self.category_2.id,
@@ -116,25 +130,30 @@ class TestProductService(TestCase):
             },
         )
 
+        files_3 = [
+            UploadFile(filename="green_image.jpg", file=BytesIO(b"mock green image content")),
+        ]
+
         # 서비스 호출
         await ProductService.create_product_with_options(
             product_create_dto=product_create_dto_1,
-            files=[],
+            files=files_1,
         )
 
         await ProductService.create_product_with_options(
             product_create_dto=product_create_dto_2,
-            files=[],
+            files=files_2,
         )
         await ProductService.create_product_with_options(
             product_create_dto=product_create_dto_3,
-            files=[],
+            files=files_3,
         )
 
         # 상품 조회
         self.product_1 = await Product.get(product_code="TEST-PRODUCT-1")
         self.product_2 = await Product.get(product_code="TEST-PRODUCT-2")
         self.product_3 = await Product.get(product_code="TEST-PRODUCT-3")
+
         # 4번쨰 상품 생성 및 조회
         self.product_4 = await Product.create(
             name="Test Product 4",
@@ -649,19 +668,125 @@ class TestProductService(TestCase):
                 expected_images
             ), f"Expected images {expected_images} but got {extracted_image_names}"
 
-    # async def test_delete_product(self):
-    #     # When: ProductService.delete_product 호출
-    #     await ProductService.delete_product(product_id=self.product.id)
-    #
-    #     # Then: 상품과 관련 데이터가 삭제되었는지 확인
-    #     deleted_product = await Product.filter(id=self.product.id).first()
-    #     assert deleted_product is None
-    #
-    #     related_options = await Option.filter(product=self.product)
-    #     assert len(related_options) == 0
-    #
-    #     related_count_products = await CountProduct.filter(product=self.product)
-    #     assert len(related_count_products) == 0
-    #
-    #     related_images = await OptionImage.filter(option__product=self.product)
-    #     assert len(related_images) == 0
+    @patch("common.utils.object_storage.ObjectStorageClient._upload")
+    async def test_update_product_with_options(self, _: AsyncMock) -> None:
+
+        product_id = self.product_1.id
+
+        product_update_dto = ProductWithOptionUpdateRequestDTO(
+            category_id=self.category_2.id,
+            product=ProductUpdateDTO(
+                name="Updated Test Product 1",
+                price=95000,
+                discount=15.0,
+                discount_option="amount",
+                origin_price=110000,
+                description="Updated description",
+                detail="Updated detail",
+                product_code="TEST-PRODUCT-1",
+            ),
+            options=[
+                OptionUpdateDTO(
+                    id=self.options_1[0].id,  # 기존 옵션 업데이트 (Red)
+                    color="Red",
+                    color_code="#FF0000",
+                    sizes=[
+                        SizeOptionUpdateDTO(id=self.count_products_1[0].id, size="M", stock=60),
+                        SizeOptionUpdateDTO(size="L", stock=30),  # 새로운 사이즈 추가
+                    ],
+                ),
+                OptionUpdateDTO(
+                    color="Green",  # 새로운 옵션 추가
+                    color_code="#00FF00",
+                    sizes=[SizeOptionUpdateDTO(size="S", stock=15)],
+                ),
+            ],
+            image_mapping={
+                "#FF0000": ["red_image_updated.jpg"],
+                "#00FF00": ["green_image_new.jpg"],
+            },
+        )
+
+        files = [
+            UploadFile(filename="red_image_updated.jpg", file=BytesIO(b"mock red image content")),
+            UploadFile(filename="green_image_new.jpg", file=BytesIO(b"mock green image content")),
+        ]
+
+        # When: 상품 업데이트 호출
+        await ProductService.update_product_with_options(
+            product_id=product_id, product_update_dto=product_update_dto, files=files
+        )
+
+        # Then: 상품 기본 정보 검증
+        updated_product = await Product.get(id=product_id).prefetch_related("product_category__category")
+        assert updated_product.name == "Updated Test Product 1"
+        assert updated_product.price == 95000
+        assert updated_product.discount == 15.0
+
+        # 카테고리 검증
+        related_categories = await Category.filter(category_product__product=updated_product).all()
+        assert len(related_categories) == 1, "관련된 카테고리는 하나여야 합니다."
+        assert related_categories[0].id == self.category_2.id, "카테고리가 올바르게 업데이트되지 않았습니다."
+
+        # Then: 옵션 업데이트 검증
+        updated_options = await Option.filter(product=updated_product).all()
+        assert len(updated_options) == 3, "총 옵션이 3개여야 합니다."
+
+        # 기존 옵션 업데이트 검증
+        red_option = next(opt for opt in updated_options if opt.color_code == "#FF0000")
+        assert red_option.color == "Red"
+
+        # 새 옵션 추가 검증
+        green_option = next(opt for opt in updated_options if opt.color_code == "#00FF00")
+        assert green_option.color == "Green"
+
+        # Then: 재고 업데이트 검증
+        updated_counts = await CountProduct.filter(product=updated_product).prefetch_related("option").all()
+        stock_map = {
+            ("#FF0000", "M"): 60,
+            ("#FF0000", "L"): 30,
+            ("#00FF00", "S"): 15,
+        }
+        for count in updated_counts:
+            key = (count.option.color_code, count.option.size)
+            assert stock_map[key] == count.count, f"Expected {stock_map[key]} but got {count.count}"
+
+        # Then: 이미지 업데이트 검증
+        updated_images = await OptionImage.filter(option__product=updated_product).prefetch_related("option").all()
+        image_map = {
+            "#FF0000": ["red_image_updated.jpg"],
+            "#00FF00": ["green_image_new.jpg"],
+        }
+
+        for option in updated_options:
+            assert (
+                option.color_code in image_map
+            ), f"Option with color code {option.color_code} not in expected image map."
+            expected_images = image_map[option.color_code]
+
+            option_images_for_option = [img for img in updated_images if img.option.id == option.id]
+
+            extracted_image_names = [img.image_url.split("/")[-1].split("_", 1)[-1] for img in option_images_for_option]
+
+            print(f"Extracted images for option {option.color_code}: {extracted_image_names}")
+            print(f"Expected images for option {option.color_code}: {expected_images}")
+
+            assert set(extracted_image_names) == set(
+                expected_images
+            ), f"Expected images {expected_images} but got {extracted_image_names} for option {option.color_code}."
+
+    @patch("common.utils.object_storage.ObjectStorageClient.delete_file")
+    async def test_delete_product(self, _: AsyncMock) -> None:
+        # Given: 삭제할 상품 준비
+        product_id = self.product_1.id
+
+        # When: 상품 삭제 호출
+        await ProductService.delete_product(product_id)
+
+        # Then: 상품 삭제 확인
+        deleted_product = await Product.filter(id=product_id).first()
+        assert deleted_product is None, f"상품 {product_id}가 삭제되지 않았습니다."
+
+        # Then: 관련된 이미지가 삭제되었는지 확인
+        remaining_images = await OptionImage.filter(option__product=self.product_1).all()
+        assert len(remaining_images) == 0, f"상품 {product_id}의 이미지가 삭제되지 않았습니다."
