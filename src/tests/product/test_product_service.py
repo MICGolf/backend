@@ -21,7 +21,9 @@ from app.product.services.product_service import ProductService
 
 
 class TestProductService(TestCase):
-    async def asyncSetUp(self) -> None:
+
+    @patch("common.utils.object_storage.ObjectStorageClient._upload")
+    async def asyncSetUp(self, _: AsyncMock) -> None:
         await super().asyncSetUp()
 
         self.category_1 = await Category.create(name="Test Category")
@@ -640,10 +642,9 @@ class TestProductService(TestCase):
 
             option_images_for_option = [img for img in option_images if img.option_id == option.id]  # type: ignore
 
-            extracted_image_names = [
-                "_".join(image.image_url.split("/")[-1].split("_")[1:]) for image in option_images_for_option
-            ]
-
+            extracted_image_names = [img.image_url.split("/")[-1].split("_", 1)[-1] for img in option_images_for_option]
+            print(extracted_image_names)
+            print(expected_images)
             assert set(extracted_image_names) == set(
                 expected_images
             ), f"Expected images {expected_images} but got {extracted_image_names}"
