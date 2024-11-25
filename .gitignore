@@ -348,3 +348,4 @@ $RECYCLE.BIN/
 
 # JetBrains 관련 설정 파일 무시
 .idea/
+/src/migrations/
