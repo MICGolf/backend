@@ -57,7 +57,7 @@ async def create_banner(
         description="클릭시 이동할 이벤트 URL",
         example="https://example.com/event",
     ),
-    banner_type: str = Form(
+    category_type: str = Form(
         ...,
         title="배너 타입",
         description="banner 또는 promotion",
@@ -79,9 +79,9 @@ async def create_banner(
     """
     request = BannerCreateRequest(
         title=title,
-        subTitle=sub_title,
+        sub_title=sub_title,
         eventUrl=event_url,
-        banner_type=banner_type,
+        category_type=category_type,
         is_active=is_active,
     )
     return await BannerService.create_banner(request, image)
