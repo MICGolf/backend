@@ -26,6 +26,7 @@ class Product(BaseModel):
     status = fields.CharField(max_length=1, default="Y")  # Y, N
     product_code = fields.CharField(max_length=255, unique=True)
 
+    options: ReverseRelation["Option"]
     categories: fields.ReverseRelation["CategoryProduct"]
 
     class Meta:
