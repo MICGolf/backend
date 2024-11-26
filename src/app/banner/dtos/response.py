@@ -4,29 +4,22 @@ from typing import TYPE_CHECKING, Generic, List, TypeVar
 from pydantic import BaseModel, Field
 
 if TYPE_CHECKING:
-    from app.banner.models.banner import Banner  # 순환 참조 방지를 위한 조건부 임포트
+    from app.banner.models.banner import Banner
 
 T = TypeVar("T")
 
 
 class PageResponse(BaseModel, Generic[T]):
-    """페이지네이션 응답 DTO
-
-    Attributes:
-        items (List[T]): 페이지 항목 목록
-        total (int): 전체 항목 수
-        page (int): 현재 페이지 번호
-        page_size (int): 페이지 크기
-    """
+    """페이지네이션된 응답을 위한 기본 DTO"""
 
     items: List[T]
-    total: int
-    page: int
-    page_size: int
+    total: int  # 전체 항목 수
+    page: int  # 현재 페이지
+    page_size: int  # 페이지당 항목 수
 
 
 class BannerResponse(BaseModel):
-    """배너 응답 DTO"""
+    """배너 정보를 반환하기 위한 DTO"""
 
     id: int = Field(..., description="배너 ID")
     title: str = Field(..., description="배너 제목")
@@ -45,18 +38,11 @@ class BannerResponse(BaseModel):
 
     @classmethod
     def from_banner(cls, banner: "Banner") -> "BannerResponse":
-        """Banner 모델을 응답 DTO로 변환
-
-        Args:
-            banner: Banner 모델 인스턴스
-
-        Returns:
-            BannerResponse: 변환된 응답 DTO
-        """
+        """Banner 모델을 DTO로 변환"""
         return cls.model_validate(banner)
 
 
 class BannerListResponse(PageResponse[BannerResponse]):
-    """배너 목록 페이지네이션 응답"""
+    """페이지네이션된 배너 목록 응답"""
 
     pass
