@@ -20,7 +20,6 @@ class BannerService:
     """배너 서비스 클래스"""
 
     ALLOWED_SORT_FIELDS = ["created_at", "display_order", "title"]
-    IMAGE_SIZE = (1920, 1080)
 
     @classmethod
     async def get_banners(
@@ -71,15 +70,15 @@ class BannerService:
     @classmethod
     async def _validate_and_adjust_display_order(cls, category_type: str, desired_order: int | None = None) -> int:
         """배너 표시 순서를 검증하고 조정"""
-        banners = await Banner.filter(category_type=category_type).order_by("-created_at").all()  # 생성일시 역순으로 정렬
+        banners = (
+            await Banner.filter(category_type=category_type).order_by("-created_at").all()
+        )  # 생성일시 역순으로 정렬
 
         if not banners:
             return 1
 
         if desired_order is None:
-            await Banner.filter(
-                category_type=category_type
-            ).update(display_order=F("display_order") + 1)
+            await Banner.filter(category_type=category_type).update(display_order=F("display_order") + 1)
             return 1
 
         current_orders = [banner.display_order for banner in banners]
@@ -91,10 +90,9 @@ class BannerService:
             desired_order = max_order + 1
 
         if desired_order <= max_order:
-            await Banner.filter(
-                category_type=category_type,
-                display_order__gte=desired_order
-            ).update(display_order=F("display_order") + 1)
+            await Banner.filter(category_type=category_type, display_order__gte=desired_order).update(
+                display_order=F("display_order") + 1
+            )
 
         return desired_order
 
