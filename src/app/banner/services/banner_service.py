@@ -41,7 +41,7 @@ class BannerService:
             category_groups[banner.category_type].append(banner)
 
         for category_type, category_banners in category_groups.items():
-            sorted_banners = sorted(category_banners, key=lambda x: x.created_at)
+            sorted_banners = sorted(category_banners, key=lambda x: x.created_at, reverse=True)
             for index, banner in enumerate(sorted_banners, start=1):
                 if banner.display_order != index:
                     await banner.update_from_dict({"display_order": index}).save()
@@ -71,12 +71,16 @@ class BannerService:
     @classmethod
     async def _validate_and_adjust_display_order(cls, category_type: str, desired_order: int | None = None) -> int:
         """배너 표시 순서를 검증하고 조정"""
-        banners = await Banner.filter(category_type=category_type).order_by("display_order").all()
+        banners = await Banner.filter(category_type=category_type).order_by("-created_at").all()  # 생성일시 역순으로 정렬
+
         if not banners:
             return 1
 
         if desired_order is None:
-            return banners[-1].display_order + 1
+            await Banner.filter(
+                category_type=category_type
+            ).update(display_order=F("display_order") + 1)
+            return 1
 
         current_orders = [banner.display_order for banner in banners]
         max_order = len(current_orders)
@@ -87,9 +91,10 @@ class BannerService:
             desired_order = max_order + 1
 
         if desired_order <= max_order:
-            await Banner.filter(category_type=category_type, display_order__gte=desired_order).update(
-                display_order=F("display_order") + 1
-            )
+            await Banner.filter(
+                category_type=category_type,
+                display_order__gte=desired_order
+            ).update(display_order=F("display_order") + 1)
 
         return desired_order
 
