@@ -1,15 +1,17 @@
-from pydantic import BaseModel
+from typing import Optional
 
-from app.promotion_product.models.promotion_product import PromotionProduct
+from pydantic import BaseModel
 
 
 class PromotionProductResponse(BaseModel):
-    id: int
+    id: Optional[int]
+    product_code: str
     product_id: int
     product_name: str
     price: float
     promotion_type: str
     is_active: bool
+    image_url: str
 
 
 class PromotionProductListResponse(BaseModel):
