@@ -1,5 +1,6 @@
-from typing import Any, Dict, List, Optional
+from typing import Optional
 
+from fastapi import HTTPException
 from tortoise.exceptions import DoesNotExist
 from tortoise.expressions import Q
 
@@ -19,7 +20,9 @@ class PromotionProductService:
 
         # 쿼리 구성
         query = PromotionProduct.filter(Q(promotion_type=promotion_type) & Q(is_active=True)).prefetch_related(
-            "product"
+            "product",  # PromotionProduct와 연결된 Product 객체를 미리 가져옵니다.
+            "product__options",  # Product와 연결된 Option 객체들을 미리 가져옵니다.
+            "product__options__images",  # Option과 연결된 OptionImage 객체들을 미리 가져옵니다.
         )
 
         # 총 개수와 아이템 목록을 가져옴
@@ -33,10 +36,16 @@ class PromotionProductService:
                     {
                         "id": item.id,
                         "product_id": item.product.id,
+                        "product_code": item.product.product_code,
                         "product_name": item.product.name,
                         "price": item.product.price,
                         "promotion_type": item.promotion_type,
                         "is_active": item.is_active,
+                        "image_url": (
+                            item.product.options[0].images[0].image_url
+                            if item.product.options and item.product.options[0].images
+                            else ""
+                        ),
                     },
                     from_attributes=True,
                 )
@@ -51,80 +60,108 @@ class PromotionProductService:
     async def add_promotion_products(
         promotion_type: str,
         is_active: bool,
-        product_name: str,
+        product_code: str,
     ) -> PromotionProductResponse:
-        # 제품 이름으로 제품 조회
-        product = await Product.get(name=product_name)
+        """프로모션 추가 기능"""
+        # 제품 코드로 제품 조회
+        # options와 images 관계를 미리 로드
+        product = await Product.filter(product_code=product_code).prefetch_related("options", "options__images").first()
+        if not product:
+            raise DoesNotExist(f"Product with code '{product_code}' does not exist.")
         product_id = product.id
 
-        # 프로모션 생성
-        create_promotion = await PromotionProduct.create(
-            promotion_type=promotion_type,
-            is_active=is_active,
-            product_id=product_id,
-        )
+        # 기존 프로모션 검색
+        existing_promotion = await PromotionProduct.filter(product_id=product_id, promotion_type=promotion_type).first()
+
+        # 이미 프로모션이 존재하는 경우
+        if existing_promotion:
+            existing_promotion.is_active = is_active
+            await existing_promotion.save()
+            promotion = existing_promotion
+        else:
+            # 기존에 프로모션이 존재하지 않는 경우
+            promotion = await PromotionProduct.create(
+                promotion_type=promotion_type,
+                is_active=is_active,
+                product_id=product_id,
+            )
 
         # 생성된 프로모션 가져오기
-        promotion = await PromotionProduct.get(id=create_promotion.id).prefetch_related("product")
         return PromotionProductResponse.model_validate(
             {
                 "id": promotion.id,
-                "product_id": promotion.product.id,
-                "product_name": promotion.product.name,
-                "price": promotion.product.price,
+                "product_code": product.product_code,
+                "product_id": product.id,
+                "product_name": product.name,
+                "price": product.price,
                 "promotion_type": promotion.promotion_type,
                 "is_active": promotion.is_active,
+                "image_url": (
+                    product.options[0].images[0].image_url if product.options and product.options[0].images else ""
+                ),
             },
             from_attributes=True,
         )
 
     @staticmethod
     async def update_promotion_products(
-        product_id: int,
+        product_code: str,
         promotion_type: str,
         is_active: bool,
         new_promotion_type: Optional[PromotionType | None] = None,
         new_is_active: Optional[bool] = None,
     ) -> PromotionProductResponse:
         """프로모션 업데이트"""
-        try:
-            # 해당 상품과 프로모션 타입으로 목표 상품 가져오기
-            update_query = await PromotionProduct.get(
-                product_id=product_id, promotion_type=promotion_type, is_active=is_active
-            ).prefetch_related("product")
+        # 제품 코드로 제품 조회 (options와 images 관계를 미리 로드)
+        product = await Product.filter(product_code=product_code).prefetch_related("options", "options__images").first()
+        if not product:
+            raise DoesNotExist(f"{product_code}는 존재하지 않는 상품코드 입니다.")
 
-            # new_promotion_type이 제공된 경우 해당 값을 반영
-            if new_promotion_type:
-                update_query.promotion_type = new_promotion_type
+        # 해당 제품의 프로모션 조회
+        promotion = await PromotionProduct.filter(
+            product_id=product.id, promotion_type=promotion_type, is_active=is_active
+        ).first()
 
-            # new_is_active가 제공된 경우 해당 값을 반영
-            if new_is_active is not None:
-                update_query.is_active = new_is_active
-
-            # 업데이트 저장
-            await update_query.save()
-
-            # 업데이트된 값을 PromotionProductResponse로 반환
-            return PromotionProductResponse.model_validate(
-                {
-                    "id": update_query.id,
-                    "product_id": update_query.product.id,
-                    "product_name": update_query.product.name,
-                    "price": update_query.product.price,
-                    "promotion_type": update_query.promotion_type,
-                    "is_active": update_query.is_active,
-                },
-                from_attributes=True,
+        if not promotion:
+            raise HTTPException(
+                status_code=404,
+                detail=f"{product_code}의 {promotion_type}은 등록되어 있지 않은 프로모션입니다.",
             )
-        except DoesNotExist:
-            raise DoesNotExist(
-                f"No PromotionProduct found with product_id={product_id}, promotion_type={promotion_type}"
-            )
+
+        # new_promotion_type이 제공된 경우 해당 값을 반영
+        if new_promotion_type:
+            promotion.promotion_type = new_promotion_type
+
+        # new_is_active가 제공된 경우 해당 값을 반영
+        if new_is_active is not None:
+            promotion.is_active = new_is_active
+
+        # 업데이트 저장
+        await promotion.save()
+
+        # 업데이트된 값을 PromotionProductResponse로 반환
+        return PromotionProductResponse.model_validate(
+            {
+                "id": promotion.id,
+                "product_code": product.product_code,
+                "product_id": product.id,
+                "product_name": product.name,
+                "price": product.price,
+                "promotion_type": promotion.promotion_type,
+                "is_active": promotion.is_active,
+                "image_url": (
+                    product.options[0].images[0].image_url if product.options and product.options[0].images else ""
+                ),
+            },
+            from_attributes=True,
+        )
 
     @staticmethod
-    async def delete_promotion_products(product_id: int, promotion_type: str) -> None:
+    async def delete_promotion_products(product_code: str, promotion_type: str) -> None:
         """프로모션 삭제"""
-        obj_query = await PromotionProduct.get(product_id=product_id, promotion_type=promotion_type)
-        # 프로모션의 상태를 원하는 상태로 변경
-
-        await obj_query.delete()
+        product = await Product.get(product_code=product_code)
+        deleted_count = await PromotionProduct.filter(product_id=product.id, promotion_type=promotion_type).delete()
+        if deleted_count == 0:
+            raise DoesNotExist(
+                f"No PromotionProduct found with product_code={product_code}, promotion_type={promotion_type}"
+            )
