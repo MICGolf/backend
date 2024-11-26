@@ -43,7 +43,7 @@ class TestBannerRouter(TestCase):
             data = response.json()
             assert "items" in data
             for item in data["items"]:
-                assert item["banner_type"] == "banner"
+                assert item["category_type"] == "banner"
 
     async def test_toggle_banner_status(self) -> None:
         async with AsyncClient(app=self.app, base_url="http://test", follow_redirects=True) as ac:

@@ -5,9 +5,9 @@ class BannerCreateRequest(BaseModel):
     """배너 생성 요청 DTO"""
 
     title: str = Field(..., description="배너 제목")
-    subTitle: str = Field(..., description="배너 소제목")
+    sub_title: str = Field(..., description="배너 소제목")
     eventUrl: str = Field(..., description="클릭시 이동할 이벤트 URL")
-    banner_type: str = Field(..., description="배너 타입 (banner/promotion)")
+    category_type: str = Field(..., description="배너 타입 (banner/promotion)")
     is_active: bool = Field(default=True, description="활성화 상태")
 
 

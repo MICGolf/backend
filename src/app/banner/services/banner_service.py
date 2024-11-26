@@ -141,14 +141,14 @@ class BannerService:
         """새로운 배너를 생성하고 이미지 업로드"""
         cls._validate_image(image)
         image_url, _ = await cls._process_image(image)
-        display_order = await cls._validate_and_adjust_display_order(request.banner_type)
+        display_order = await cls._validate_and_adjust_display_order(request.category_type)
 
         banner = await Banner.create(
             title=request.title,
-            sub_title=request.subTitle,
+            sub_title=request.sub_title,
             event_url=request.eventUrl,
             image_url=image_url,
-            category_type=request.banner_type,
+            category_type=request.category_type,
             is_active=request.is_active,
             display_order=display_order,
         )

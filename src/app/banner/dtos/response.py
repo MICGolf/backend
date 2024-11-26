@@ -23,10 +23,10 @@ class BannerResponse(BaseModel):
 
     id: int = Field(..., description="배너 ID")
     title: str = Field(..., description="배너 제목")
-    sub_title: str = Field(..., description="배너 소제목", alias="subTitle")
+    sub_title: str = Field(..., description="배너 소제목", alias="sub_title")
     image_url: str = Field(..., description="배너 이미지 URL")
     event_url: str = Field(..., description="이벤트 URL", alias="eventUrl")
-    category_type: str = Field(..., description="배너 타입", alias="banner_type")
+    category_type: str = Field(..., description="배너 타입", alias="category_type")
     is_active: bool = Field(..., description="활성화 상태")
     display_order: int = Field(..., description="표시 순서")
     created_at: datetime = Field(..., description="생성일시")
