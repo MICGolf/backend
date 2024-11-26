@@ -20,6 +20,7 @@ class BannerService:
     """배너 서비스 클래스"""
 
     ALLOWED_SORT_FIELDS = ["created_at", "display_order", "title"]
+    # IMAGE_SIZE = (1920, 1080)
 
     @classmethod
     async def get_banners(
