@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Header, Path, status
 
-from app.user.dtos.auth_dto import JwtTokenResponseDTO
+from app.user.dtos.response import JwtTokenResponseDTO
 from app.user.services.user_service import UserService
 
 router = APIRouter(prefix="/oauth", tags=["Oauth 사용자 인증"])

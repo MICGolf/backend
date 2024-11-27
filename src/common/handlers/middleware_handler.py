@@ -29,7 +29,7 @@ def attach_middleware_handlers(app: FastAPI) -> None:
         allow_headers=["*"],
     )
     # app.add_middleware(CommonResponseMiddleware)
-    # app.add_middleware(
-    #     TrustedHostMiddleware,
-    #     allowed_hosts=["micgolf.kro.kr", "*.micgolf.kro.kr", "localhost", "211.188.61.243", "test", "*"],
-    # )
+    app.add_middleware(
+        TrustedHostMiddleware,
+        allowed_hosts=["micgolf.kro.kr", "*.micgolf.kro.kr", "localhost", "211.188.61.243", "test"],
+    )

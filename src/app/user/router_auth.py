@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, status
 
 from app.user.dtos.request import UserCreateRequestDTO
+from app.user.dtos.response import JwtTokenResponseDTO, RefreshTokenRequest
+from app.user.services.auth_service import AuthenticateService
 from app.user.services.user_service import UserService
 
 router = APIRouter(prefix="/auth", tags=["사용자 인증"])
@@ -40,3 +42,17 @@ async def user_sign_up_handler(
     await user_service.create_user(user_data=body)
     return {"message": "User created successfully."}
     # return UserResponseDto.build(user=new_user)
+
+
+@router.post(
+    "/refresh",
+    status_code=status.HTTP_200_OK,
+    response_model=JwtTokenResponseDTO,
+    summary="토큰 재발급 API",
+    description="토큰 재발급 API입니다",
+)
+async def refresh_token(
+    request: RefreshTokenRequest,
+    auth_service: AuthenticateService = Depends(),
+) -> JwtTokenResponseDTO:
+    return await auth_service.refresh_access_token(access_token=request.access_token)

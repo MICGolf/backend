@@ -1,6 +1,6 @@
 import random
 import time
-from typing import Any
+from typing import Any, cast
 
 import bcrypt
 import httpx
@@ -9,6 +9,8 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import APIKeyHeader, HTTPAuthorizationCredentials, HTTPBasic, HTTPBearer
 
 from app.user.dtos.auth_dto import JwtPayloadTypedDict, SocialUserInfo
+from app.user.dtos.response import JwtTokenResponseDTO
+from app.user.models.user import User
 from common.constants.auth_constants import (
     JWT_ALGORITHM,
     JWT_EXPIRY_SECONDS,
@@ -158,22 +160,45 @@ class AuthenticateService:
             response.raise_for_status()
             return response.json()  # type: ignore
 
-    #
-    # @staticmethod
-    # def _decode_token(token: JwtPayloadTypedDict) -> dict[str, Any]:
-    #     return jwt.decode(
-    #         jwt=token,
-    #         key=JWT_SECRET_KEY,
-    #         algorithms=[JWT_ALGORITHM],
-    #     )
-    #
-    # @staticmethod
-    # def is_valid_access_token(payload: JwtPayloadTypedDict) -> bool:
-    #     return time.time() < payload["isa"] + JWT_EXPIRY_SECONDS
-    #
-    # @staticmethod
-    # def is_valid_refresh_token(payload: JwtPayloadTypedDict) -> bool:
-    #     return time.time() < payload["isa"] + JWT_REFRESH_EXPIRY_SECONDS
+    async def refresh_access_token(self, access_token: str) -> JwtTokenResponseDTO:
+
+        payload = self._decode_token(access_token)
+
+        user_id = payload.get("user_id")
+        user = await User.get(id=user_id)
+
+        refresh_token = user.refresh_token_id
+        payload = self._decode_token(refresh_token)
+
+        if not self.is_valid_refresh_token(payload):
+            raise HTTPException(status_code=401, detail="Refresh token has expired")
+
+        return JwtTokenResponseDTO.build(
+            access_token=self.generate_access_token(
+                user_id=user.id,
+                user_type=user.user_type,
+            ),
+            user_id=user.id,
+            name=user.name,
+        )
+
+    @staticmethod
+    def _decode_token(token: str) -> JwtPayloadTypedDict:
+        payload = jwt.decode(
+            jwt=token,
+            key=JWT_SECRET_KEY,
+            algorithms=[JWT_ALGORITHM],
+        )
+        return cast(JwtPayloadTypedDict, payload)
+
+    @staticmethod
+    def is_valid_access_token(payload: JwtPayloadTypedDict) -> bool:
+        return time.time() < float(payload["isa"]) + JWT_EXPIRY_SECONDS
+
+    @staticmethod
+    def is_valid_refresh_token(payload: JwtPayloadTypedDict) -> bool:
+        return time.time() < float(payload["isa"]) + JWT_REFRESH_EXPIRY_SECONDS
+
     #
     # @staticmethod
     # def _get_access_jwt(

@@ -1,7 +1,8 @@
 from fastapi import Depends, HTTPException
 
-from app.user.dtos.auth_dto import JwtTokenResponseDTO, SocialUserInfo
+from app.user.dtos.auth_dto import SocialUserInfo
 from app.user.dtos.request import UserCreateRequestDTO
+from app.user.dtos.response import JwtTokenResponseDTO
 from app.user.models.user import User
 from app.user.services.auth_service import AuthenticateService
 from common.exceptions.custom_exceptions import (
