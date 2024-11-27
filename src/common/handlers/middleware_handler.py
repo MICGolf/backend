@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
-
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 # from common.middlewares.custom_response_middleware import CommonResponseMiddleware
 
 
@@ -28,3 +28,7 @@ def attach_middleware_handlers(app: FastAPI) -> None:
         allow_headers=["*"],
     )
     # app.add_middleware(CommonResponseMiddleware)
+    app.add_middleware(
+        TrustedHostMiddleware,
+        allowed_hosts=["micgolf.kro.kr", "*.micgolf.kro.kr", "localhost", "211.188.61.243"]
+    )
