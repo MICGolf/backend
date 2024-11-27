@@ -1,7 +1,9 @@
-name: FastAPI CI
+name: FastAPI CI/CD
 
 on:
   push:
+    branches:
+      - develop  # develop 브랜치에 푸시될 때만 실행
 
 jobs:
   ci:
@@ -35,7 +37,6 @@ jobs:
 
       - name: Install Poetry
         run: |
-          
           curl -sSL https://install.python-poetry.org | python3 -
           echo "${HOME}/.local/bin" >> $GITHUB_PATH
 
@@ -65,3 +66,25 @@ jobs:
           poetry run coverage run -m pytest
           poetry run coverage report -m
           poetry run coverage html
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: ci  # CI 작업이 성공해야 실행
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v2
+
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Deploy to server
+        run: |
+          ssh -o StrictHostKeyChecking=no root@211.188.61.243 << 'EOF'
+          cd backend/src
+          git pull origin develop
+          poetry shell
+          poetry install
+          kill -HUP $(pidof gunicorn)
+          EOF
