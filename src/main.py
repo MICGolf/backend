@@ -1,9 +1,10 @@
-from fastapi import FastAPI, Request
 import subprocess
 
-from common.webhooks.github_webhook import router as github_router
+from fastapi import FastAPI, Request
+
 from common.post_construct import post_construct
 from common.utils.logger import setup_logger
+from common.webhooks.github_webhook import router as github_router
 from core.configs import settings
 from core.database.db_settings import database_initialize
 
