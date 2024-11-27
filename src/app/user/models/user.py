@@ -4,6 +4,7 @@ from common.models.base_model import BaseModel
 
 
 class User(BaseModel):
+    id = fields.IntField(pk=True)
     name = fields.CharField(max_length=255)
     email = fields.CharField(max_length=255, unique=True)
     phone = fields.CharField(max_length=20, null=True)

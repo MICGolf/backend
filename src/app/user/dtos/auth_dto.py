@@ -1,0 +1,34 @@
+from typing import TypedDict
+
+from pydantic import BaseModel
+
+
+class JwtPayloadTypedDict(TypedDict):
+    user_id: int
+    user_type: str
+    isa: str
+    iss: str
+
+
+class JwtTokenResponseDTO(BaseModel):
+    access_token: str
+    user_id: int
+    name: str
+
+    @classmethod
+    def build(cls, access_token: str, user_id: int, name: str) -> "JwtTokenResponseDTO":
+        return cls(
+            access_token=access_token,
+            user_id=user_id,
+            name=name,
+        )
+
+
+class SocialUserInfo(BaseModel):
+    social_id: str
+    email: str
+    name: str
+
+    @classmethod
+    def build(cls, social_id: str, email: str, name: str) -> "SocialUserInfo":
+        return cls(social_id=social_id, email=email, name=name)

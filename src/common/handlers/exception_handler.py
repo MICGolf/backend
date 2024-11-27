@@ -3,8 +3,9 @@ from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException
 from starlette.requests import Request
 from starlette.responses import JSONResponse
-from tortoise.exceptions import DoesNotExist
+from tortoise.exceptions import DoesNotExist, IntegrityError
 
+from common.exceptions.custom_exceptions import SocialLoginConflictException
 from common.utils.logger import setup_logger
 from core.configs import settings
 
@@ -77,5 +78,42 @@ def attach_exception_handlers(app: FastAPI) -> None:
                 "code": 400,
                 "data": str(exc),
                 "message": "A type error occurred while processing your request.",
+            },
+        )
+
+    @app.exception_handler(IntegrityError)
+    async def integrity_error_handler(request: Request, exc: IntegrityError) -> JSONResponse:
+        """
+        전역 IntegrityError 처리기
+        """
+        error_message = str(exc)
+
+        if "Duplicate entry" in error_message and "email" in error_message:
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "code": 400,
+                    "message": "해당 이메일의 유저가 이미 존재합니다",
+                    "data": {"error": "email_duplicate", "details": error_message},
+                },
+            )
+
+        return JSONResponse(
+            status_code=400,
+            content={
+                "code": 400,
+                "message": "Database integrity error occurred.",
+                "data": {"error": "integrity_error", "details": error_message},
+            },
+        )
+
+    @app.exception_handler(SocialLoginConflictException)
+    async def social_login_conflict_handler(request: Request, exc: SocialLoginConflictException) -> JSONResponse:
+        return JSONResponse(
+            status_code=409,
+            content={
+                "code": 409,
+                "message": "The provided email is already associated with another social login type.",
+                "data": {"social_login_type": exc.social_login_type},
             },
         )
