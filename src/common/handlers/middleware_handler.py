@@ -2,6 +2,8 @@ from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
+from common.middlewares.access_token_middleware import AccessTokenMiddleware
+
 # from common.middlewares.custom_response_middleware import CommonResponseMiddleware
 
 

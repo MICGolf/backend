@@ -10,6 +10,13 @@ class JwtPayloadTypedDict(TypedDict):
     iss: str
 
 
+class ResetTokenPayloadTypedDict(TypedDict):
+    user_id: int
+    user_name: str
+    isa: str
+    iss: str
+
+
 class SocialUserInfo(BaseModel):
     social_id: str
     email: str

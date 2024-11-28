@@ -8,7 +8,7 @@ import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import APIKeyHeader, HTTPAuthorizationCredentials, HTTPBasic, HTTPBearer
 
-from app.user.dtos.auth_dto import JwtPayloadTypedDict, SocialUserInfo
+from app.user.dtos.auth_dto import JwtPayloadTypedDict, ResetTokenPayloadTypedDict, SocialUserInfo
 from app.user.dtos.response import JwtTokenResponseDTO
 from app.user.models.user import User
 from common.constants.auth_constants import (
@@ -199,47 +199,48 @@ class AuthenticateService:
     def is_valid_refresh_token(payload: JwtPayloadTypedDict) -> bool:
         return time.time() < float(payload["isa"]) + JWT_REFRESH_EXPIRY_SECONDS
 
-    #
-    # @staticmethod
-    # def _get_access_jwt(
-    #     auth_header: HTTPAuthorizationCredentials = HTTPBearer(auto_error=False),
-    # ):
-    #     if auth_header is None:
-    #         raise HTTPException(
-    #             status_code=status.HTTP_401_UNAUTHORIZED,
-    #             detail="JWT access not provided",
-    #         )
-    #     return auth_header.credentials
-    #
-    # @staticmethod
-    # def _get_refresh_jwt(
-    #     auth_header: HTTPAuthorizationCredentials | None = APIKeyHeader(name="X-Refresh-Token", auto_error=False),
-    # ):
-    #     if auth_header is None:
-    #         raise HTTPException(
-    #             status_code=status.HTTP_401_UNAUTHORIZED,
-    #             detail="JWT refresh not provided",
-    #         )
-    #     return auth_header
-    #
-    # @staticmethod
-    # def get_username(
-    #     access_token_in_header: HTTPAuthorizationCredentials = Depends(HTTPBearer(auto_error=False)),
-    #     refresh_token_in_header: str | None = Depends(APIKeyHeader(name="X-Refresh-Token", auto_error=False)),
-    # ):
-    #     access_token = AuthenticateService._get_access_jwt(access_token_in_header)
-    #     access_token_payload = AuthenticateService._decode_token(access_token)
-    #
-    #     refresh_token = AuthenticateService._get_refresh_jwt(refresh_token_in_header)
-    #     refresh_token_payload = AuthenticateService._decode_token(refresh_token)
-    #
-    #     if not AuthenticateService.is_valid_access_token(
-    #         access_token_payload
-    #     ) and not AuthenticateService.is_valid_refresh_token(refresh_token_payload):
-    #
-    #         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token Expired")
-    #     return access_token_payload.get("username")
-    #
     @staticmethod
-    def generate_verification_code() -> str:
+    def _get_access_jwt(
+        auth_header: HTTPAuthorizationCredentials = Depends(HTTPBearer(auto_error=False)),
+    ) -> str:
+        if auth_header is None or not auth_header.credentials:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="JWT access not provided",
+            )
+        return auth_header.credentials
+
+    def get_user_id(
+        self,
+        access_token_in_header: HTTPAuthorizationCredentials = Depends(HTTPBearer(auto_error=False)),
+    ) -> int:
+        access_token = self._get_access_jwt(access_token_in_header)
+        access_token_payload = self._decode_token(access_token)
+
+        if not self.is_valid_access_token(access_token_payload):
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token Expired")
+
+        user_id = access_token_payload.get("user_id")
+
+        if user_id is None:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User ID not found in token")
+
+        return user_id
+
+    @staticmethod
+    async def generate_verification_code() -> str:
         return str(random.randint(100000, 999999))
+
+    @staticmethod
+    def generate_reset_token(user_id: int, user_name: str) -> str:
+        payload: ResetTokenPayloadTypedDict = {
+            "user_id": user_id,
+            "user_name": user_name,
+            "isa": str(time.time()),
+            "iss": "oz-coding",
+        }
+        return jwt.encode(
+            payload=dict(payload),
+            key=JWT_SECRET_KEY,
+            algorithm=JWT_ALGORITHM,
+        )

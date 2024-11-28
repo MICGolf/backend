@@ -1,7 +1,9 @@
+from typing import Any
+
 from fastapi import APIRouter, Depends, status
 
 from app.user.dtos.request import UserCreateRequestDTO
-from app.user.dtos.response import JwtTokenResponseDTO, RefreshTokenRequest
+from app.user.dtos.response import JwtTokenResponseDTO, RefreshTokenRequest, UserLoginInfoResponseDTO
 from app.user.services.auth_service import AuthenticateService
 from app.user.services.user_service import UserService
 
@@ -44,6 +46,21 @@ async def user_sign_up_handler(
     # return UserResponseDto.build(user=new_user)
 
 
+@router.get(
+    "/find-id",
+    status_code=status.HTTP_200_OK,
+    response_model=UserLoginInfoResponseDTO,
+    summary="사용자 아이디 조회 API",
+    description="로그인 Id 조회 API입니다",
+)
+async def find_login_id_handler(
+    name: str,
+    email: str,
+    user_service: UserService = Depends(),
+) -> UserLoginInfoResponseDTO:
+    return await user_service.find_user_login_id_by_name_and_email(name=name, email=email)
+
+
 @router.post(
     "/refresh",
     status_code=status.HTTP_200_OK,
@@ -56,3 +73,8 @@ async def refresh_token(
     auth_service: AuthenticateService = Depends(),
 ) -> JwtTokenResponseDTO:
     return await auth_service.refresh_access_token(access_token=request.access_token)
+
+
+@router.get("/protected", status_code=status.HTTP_200_OK)
+async def protected_route(user_id: int = Depends(AuthenticateService().get_user_id)) -> dict[str, Any]:
+    return {"message": "Access granted", "user_id": user_id}

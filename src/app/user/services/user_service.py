@@ -1,8 +1,7 @@
 from fastapi import Depends, HTTPException
 
-from app.user.dtos.auth_dto import SocialUserInfo
 from app.user.dtos.request import UserCreateRequestDTO
-from app.user.dtos.response import JwtTokenResponseDTO
+from app.user.dtos.response import JwtTokenResponseDTO, UserLoginInfoResponseDTO
 from app.user.models.user import User
 from app.user.services.auth_service import AuthenticateService
 from common.exceptions.custom_exceptions import (
@@ -10,6 +9,8 @@ from common.exceptions.custom_exceptions import (
     SocialLoginConflictException,
     UserNotFoundException,
 )
+from common.utils.email_services import get_email_service
+from common.utils.email_services.email_service import EmailService
 from common.utils.sms_services import get_sms_service
 from common.utils.sms_services.sms_service import SmsService
 
@@ -19,9 +20,11 @@ class UserService:
         self,
         auth_service: AuthenticateService = Depends(),
         sms_service: SmsService = Depends(get_sms_service),
+        email_service: EmailService = Depends(get_email_service),
     ):
         self.auth_service = auth_service
         self.sms_service = sms_service
+        self.email_service = email_service
 
     async def create_user(self, user_data: UserCreateRequestDTO) -> User:
 
@@ -58,7 +61,7 @@ class UserService:
             raise HTTPException(status_code=400, detail="This login ID is already taken.")
 
     async def send_sms_process(self, phone_number: str) -> None:
-        verification_code = self.auth_service.generate_verification_code()
+        verification_code = await self.auth_service.generate_verification_code()
         # SMS 발송
 
         await self.sms_service.send_sms(phone_number, verification_code)
@@ -96,9 +99,9 @@ class UserService:
         user.refresh_token_id = self.auth_service.generate_refresh_token(user_id=user.id, user_type=user.user_type)
         await user.save()
 
-        return self._generate_jwt_response(user)
+        return await self._generate_jwt_response(user)
 
-    def _generate_jwt_response(self, user: User) -> JwtTokenResponseDTO:
+    async def _generate_jwt_response(self, user: User) -> JwtTokenResponseDTO:
         return JwtTokenResponseDTO.build(
             access_token=self.auth_service.generate_access_token(
                 user_id=user.id,
@@ -107,6 +110,19 @@ class UserService:
             user_id=user.id,
             name=user.name,
         )
+
+    @staticmethod
+    async def find_user_login_id_by_name_and_email(name: str, email: str) -> UserLoginInfoResponseDTO:
+        user = await User.filter(name=name, email=email).first()
+
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        login_type = "social" if user.social_login_type else "normal"
+
+        social_type = user.social_login_type if user.social_login_type else "none"
+
+        return UserLoginInfoResponseDTO.build(login_type=login_type, social_type=social_type, email=user.email)
 
     # 인증 코드 저장 (임시 저장, 만료 시간 설정)
     # await VerificationCode.create(phone_number=request.phone_number, code=verification_code)

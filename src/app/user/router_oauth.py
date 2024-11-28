@@ -27,7 +27,7 @@ async def kakao_callback(
     return code
 
 
-@router.post("/naver/callback")
+@router.get("/naver/callback")
 async def naver_callback(
     code: str,
 ) -> str:
