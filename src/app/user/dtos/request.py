@@ -12,7 +12,7 @@ class UserCreateRequestDTO(BaseModel):
     password2: str = Field(..., min_length=6)
 
     @model_validator(mode="after")
-    def validate_passwords(self) -> "ResetPasswordRequest":
+    def validate_passwords(self) -> "UserCreateRequestDTO":
         if self.password != self.password2:
             raise ValueError("The passwords do not match.")
 

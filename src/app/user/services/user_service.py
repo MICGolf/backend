@@ -30,7 +30,7 @@ class UserService:
 
     async def create_user(self, user_data: UserCreateRequestDTO) -> User:
 
-        hashed_password = self.auth_service.hash_password(plain_password=user_data.password)
+        hashed_password = await self.auth_service.hash_password(plain_password=user_data.password)
 
         user = await User.create(
             name=user_data.name,
@@ -164,7 +164,7 @@ class UserService:
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 
-        hashed_password = self.auth_service.hash_password(plain_password=new_password)
+        hashed_password = await self.auth_service.hash_password(plain_password=new_password)
 
         user.password = hashed_password
 
