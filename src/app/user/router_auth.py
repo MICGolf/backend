@@ -105,6 +105,11 @@ async def refresh_token(
     return await auth_service.refresh_access_token(access_token=request.access_token)
 
 
-@router.get("/protected", status_code=status.HTTP_200_OK)
+@router.get(
+    "/protected",
+    status_code=status.HTTP_200_OK,
+    summary="토큰 정보 추출 테스트 API",
+    description="토큰 정보 추출 테스트 API",
+)
 async def protected_route(user_id: int = Depends(AuthenticateService().get_user_id)) -> dict[str, Any]:
     return {"message": "Access granted", "user_id": user_id}
