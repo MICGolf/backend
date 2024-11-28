@@ -3,6 +3,11 @@ from tortoise.contrib.test import TestCase
 from tortoise.exceptions import DoesNotExist
 
 from app.product.models.product import DiscountOption, Option, OptionImage, Product
+from app.promotion_product.dtos.promotion_request import (
+    AddPromotionRequest,
+    DeletePromotionRequest,
+    UpdatePromotionRequest,
+)
 from app.promotion_product.dtos.promotion_response import PromotionProductListResponse, PromotionProductResponse
 from app.promotion_product.models.promotion_product import PromotionProduct, PromotionType
 from app.promotion_product.services.promotion_services import PromotionProductService
@@ -62,124 +67,141 @@ class TestPromotionProductService(TestCase):
 
     async def test_add_promotion_products(self) -> None:
         # Given
-        promotion_type = "md_pick"
-        is_active = True
-        product_code = self.product.product_code
+        request = AddPromotionRequest(
+            promotion_type="md_pick",
+            is_active=True,
+            product_code=self.product.product_code,
+        )
 
         # When
-        response = await PromotionProductService.add_promotion_products(
-            promotion_type=promotion_type, product_code=product_code, is_active=is_active
-        )
+        response = await PromotionProductService.add_promotion_products(request)
 
         # Then
         assert response.product_name == self.product.name
-        assert response.is_active == is_active
-        assert response.promotion_type == promotion_type
+        assert response.is_active == request.is_active
+        assert response.promotion_type == request.promotion_type
 
     async def test_add_promotion_not_already_exist(self) -> None:
         # Given
-        promotion_type = "best"
-        is_active = True
-        product_code = self.product.product_code  # 존재하는 제품 코드 사용
-
-        # When: 해당 제품이 아직 프로모션에 등록된 적 없는 경우 추가
-        response = await PromotionProductService.add_promotion_products(
-            promotion_type=promotion_type, product_code=product_code, is_active=is_active
+        request = AddPromotionRequest(
+            promotion_type="best",
+            is_active=True,
+            product_code=self.product.product_code,
         )
 
-        # Then: 생성된 프로모션이 올바른지 확인
+        # When
+        response = await PromotionProductService.add_promotion_products(request)
+
+        # Then
         assert isinstance(response, PromotionProductResponse)
-        assert response.product_code == product_code
+        assert response.product_code == request.product_code
         assert response.product_name == self.product.name
-        assert response.is_active == is_active
-        assert response.promotion_type == promotion_type
+        assert response.is_active == request.is_active
+        assert response.promotion_type == request.promotion_type
         assert response.image_url == (response.image_url if response.image_url else "")
 
     async def test_add_promotion_products_error(self) -> None:
         # Given
-        promotion_type = "md_pick"
-        is_active = True
-        product_code = "randomstring"
-
-        # When
-        with self.assertRaises(DoesNotExist) as context:
-            await PromotionProductService.add_promotion_products(
-                promotion_type=promotion_type, product_code=product_code, is_active=is_active
-            )
-
-        # Then
-        assert str(context.exception) == f"Product with code '{product_code}' does not exist."
-
-    async def test_update_promotion_products(self) -> None:
-        # Given
-        product_code = self.product.product_code
-        promotion_type = self.promotion.promotion_type
-        is_active = self.promotion.is_active
-
-        # When
-        new_promotion_type = PromotionType.BEST
-        new_is_active = False
-        response = await PromotionProductService.update_promotion_products(
-            product_code=product_code,
-            promotion_type=promotion_type,
-            is_active=is_active,
-            new_promotion_type=new_promotion_type,
-            new_is_active=new_is_active,
+        request = AddPromotionRequest(
+            promotion_type="md_pick",
+            is_active=True,
+            product_code="randomstring",
         )
-
-        # Then
-        assert response.promotion_type == new_promotion_type
-        assert response.is_active == new_is_active
-
-    async def test_update_promotion_product_does_not_exist(self) -> None:
-        # Given
-        invalid_product_code = "Randomstring"  # 존재하지 않을 가능성이 높은 ID 사용
-        promotion_type = "best"
-        is_active = True
-
-        # When & Then
-        with self.assertRaises(DoesNotExist) as context:
-            await PromotionProductService.update_promotion_products(
-                product_code=invalid_product_code,
-                promotion_type=promotion_type,
-                is_active=is_active,
-                new_promotion_type=PromotionType.BEST,
-                new_is_active=False,
-            )
-        assert str(context.exception) == f"{invalid_product_code}는 존재하지 않는 상품코드 입니다."
-
-    async def test_update_promotion_promotion_does_not_exist(self) -> None:
-        # Given
-        product_code = self.product.product_code
-        promotion_type = PromotionType.BEST  # 초기 설정과 다른 type 할당
-        is_active = True
 
         # When
         with self.assertRaises(HTTPException) as context:
-            await PromotionProductService.update_promotion_products(
-                product_code=product_code,
-                promotion_type=promotion_type,
-                is_active=is_active,
-                new_promotion_type=PromotionType.BEST,
-                new_is_active=False,
-            )
+            await PromotionProductService.add_promotion_products(request)
+
         # Then
         exception = context.exception
         assert exception.status_code == 404
-        assert exception.detail == f"{product_code}의 {promotion_type}은 등록되어 있지 않은 프로모션입니다."
+        assert exception.detail == f"Product with code '{request.product_code}' does not exist."
+
+    async def test_update_promotion_products(self) -> None:
+        # Given
+        request = UpdatePromotionRequest(
+            product_code=self.product.product_code,
+            promotion_type=self.promotion.promotion_type,
+            is_active=self.promotion.is_active,
+            new_promotion_type=PromotionType.BEST,
+            new_is_active=False,
+        )
+
+        # When
+        response = await PromotionProductService.update_promotion_products(request)
+
+        # Then
+        assert response.promotion_type == request.new_promotion_type
+        assert response.is_active == request.new_is_active
+
+    async def test_update_promotion_product_does_not_exist(self) -> None:
+        # Given
+        request = UpdatePromotionRequest(
+            product_code="Randomstring",
+            promotion_type="best",
+            is_active=True,
+            new_promotion_type=PromotionType.BEST,
+            new_is_active=False,
+        )
+
+        # When
+        with self.assertRaises(HTTPException) as context:
+            await PromotionProductService.update_promotion_products(request)
+
+        # Then
+        exception = context.exception
+        assert exception.status_code == 404
+        assert exception.detail == f"{request.product_code}는 존재하지 않는 상품코드 입니다."
+
+    async def test_update_promotion_promotion_does_not_exist(self) -> None:
+        # Given
+        request = UpdatePromotionRequest(
+            product_code=self.product.product_code,
+            promotion_type=PromotionType.BEST,
+            is_active=True,
+            new_promotion_type=PromotionType.BEST,
+            new_is_active=False,
+        )
+
+        # When
+        with self.assertRaises(HTTPException) as context:
+            await PromotionProductService.update_promotion_products(request)
+
+        # Then
+        exception = context.exception
+        assert exception.status_code == 404
+        assert (
+            exception.detail
+            == f"{request.product_code}의 {request.promotion_type}은 등록되어 있지 않은 프로모션입니다."
+        )
 
     async def test_delete_promotion_products(self) -> None:
         # Given
-        product_code = self.product.product_code
-        promotion_type = self.promotion.promotion_type
-
-        # When
-        await PromotionProductService.delete_promotion_products(
-            product_code=product_code,
-            promotion_type=promotion_type,
+        request = DeletePromotionRequest(
+            product_code=self.product.product_code,
+            promotion_type=self.promotion.promotion_type,
         )
 
+        # When
+        await PromotionProductService.delete_promotion_products(request)
+
         # Then
-        # 해당 프로모션 제품이 삭제되었는지 확인
+        # 삭제된 프로모션이 더 이상 존재하지 않는지 확인
         with self.assertRaises(DoesNotExist):
-            await PromotionProduct.get(product_id=self.product.id, promotion_type=promotion_type)
+            await PromotionProduct.get(product_id=self.product.id, promotion_type=request.promotion_type)
+
+    async def test_delete_product_not_found(self) -> None:
+        # Given: 존재하지 않는 product_code
+        request = DeletePromotionRequest(
+            product_code="nonexistent_code",  # 존재하지 않는 product_code
+            promotion_type=self.promotion.promotion_type,
+        )
+
+        # When & Then
+        with self.assertRaises(HTTPException) as context:
+            await PromotionProductService.delete_promotion_products(request)
+
+        # HTTPException 발생 확인
+        exception = context.exception
+        assert exception.status_code == 404
+        assert exception.detail == f"Product with code '{request.product_code}' does not exist."
