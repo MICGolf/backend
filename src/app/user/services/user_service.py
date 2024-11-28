@@ -38,8 +38,6 @@ class UserService:
             phone=user_data.phone,
             login_id=user_data.login_id,
             password=hashed_password,
-            social_login_type=user_data.social_login_type,
-            social_id=user_data.social_id,
         )
 
         return user
@@ -67,6 +65,17 @@ class UserService:
         # SMS 발송
 
         await self.sms_service.send_sms(phone_number, verification_code)
+
+    async def handle_login(self, login_id: str, password: str) -> JwtTokenResponseDTO:
+        user = await User.filter(login_id=login_id).first()
+
+        if not user:
+            raise UserNotFoundException()
+
+        if not self.auth_service.verify_password(password, user.password):
+            raise InvalidPasswordException()
+
+        return await self._handle_user(user)
 
     async def handle_oauth_login(self, code: str, social_type: str) -> JwtTokenResponseDTO:
         access_token = await self.auth_service.get_access_token(code=code, social_type=social_type)

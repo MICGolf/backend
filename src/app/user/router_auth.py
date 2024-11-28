@@ -2,7 +2,12 @@ from typing import Any
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Request, status
 
-from app.user.dtos.request import PasswordResetRequestDTO, ResetPasswordRequest, UserCreateRequestDTO
+from app.user.dtos.request import (
+    PasswordResetRequestDTO,
+    ResetPasswordRequest,
+    UserCreateRequestDTO,
+    UserLoginRequestDTO,
+)
 from app.user.dtos.response import JwtTokenResponseDTO, RefreshTokenRequest, UserLoginInfoResponseDTO
 from app.user.services.auth_service import AuthenticateService
 from app.user.services.user_service import UserService
@@ -36,8 +41,9 @@ async def send_verification_code(
 
 @router.post(
     "/sign-up",
-    description="유저 회원가입 API입니다",
     status_code=status.HTTP_201_CREATED,
+    summary="유저 회원가입 API",
+    description="유저 회원가입 API입니다",
 )
 async def user_sign_up_handler(
     body: UserCreateRequestDTO,
@@ -45,6 +51,20 @@ async def user_sign_up_handler(
 ) -> dict[str, str]:
     await user_service.create_user(user_data=body)
     return {"message": "User created successfully."}
+
+
+@router.post(
+    "/login",
+    status_code=status.HTTP_200_OK,
+    response_model=JwtTokenResponseDTO,
+    summary="일반 로그인 API",
+    description="일반 로그인 API입니다",
+)
+async def user_login_handler(
+    body: UserLoginRequestDTO,
+    user_service: UserService = Depends(),
+) -> JwtTokenResponseDTO:
+    return await user_service.handle_login(login_id=body.login_id, password=body.password)
 
 
 @router.get(

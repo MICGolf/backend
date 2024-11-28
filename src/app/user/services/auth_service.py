@@ -29,17 +29,20 @@ basic_auth = HTTPBasic()
 
 class AuthenticateService:
     @staticmethod
-    def hash_password(plain_password: str) -> str:
+    async def hash_password(plain_password: str) -> str:
         plain_password_bytes = plain_password.encode("UTF-8")
         hashed_password = bcrypt.hashpw(plain_password_bytes, bcrypt.gensalt())
         return hashed_password.decode("UTF-8")
 
     @staticmethod
-    def check_password(input_password: str, hashed_password: str) -> bool:
+    async def check_password(input_password: str, hashed_password: str) -> bool:
         return bcrypt.checkpw(
             input_password.encode("UTF-8"),
             hashed_password.encode("UTF-8"),
         )
+
+    async def verify_password(self, input_password: str, stored_hashed_password: str) -> bool:
+        return await self.check_password(input_password, stored_hashed_password)
 
     async def get_social_user_info(self, access_token: str, social_type: str) -> SocialUserInfo:
         if social_type == "kakao":
