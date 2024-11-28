@@ -1,6 +1,6 @@
 ## Micgolf 쇼핑몰 서비스 - Backend
 ### < 프로젝트 구조 >
-
+```
 backend/
 ├── src/
 │   ├── app/
@@ -45,3 +45,4 @@ backend/
 ├── docker-compose-mysql.yml
 ├── Dockerfile
 └── README.md
+```
