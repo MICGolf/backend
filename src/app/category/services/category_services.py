@@ -90,15 +90,21 @@ class CategoryService:
         if not category:
             raise HTTPException(status_code=404, detail="Category not found")
 
-        if await category.subcategory.all().count() > 0:  # type: ignore
-            raise HTTPException(status_code=400, detail="Cannot delete category with subcategories")
+        # 삭제하려는 카테고리와 그 하위의 모든 카테고리 ID 목록을 가져옴
+        subcategory_ids = [category.id]  # 현재 카테고리 ID
+        subcategories = await category.subcategory.all()  # type: ignore
 
-        if await category.category_product.all().count() > 0:  # type: ignore
-            raise HTTPException(status_code=400, detail="Cannot delete category with products")
+        # 하위 카테고리들의 ID도 추가
+        for subcategory in subcategories:
+            subcategory_ids.append(subcategory.id)
 
-        if category.depth == 0:
-            raise HTTPException(status_code=400, detail="최상단 카테고리는 삭제할 수 없습니다.")
+        # 모든 연관된 카테고리의 상품 연결 여부 확인
+        for cat_id in subcategory_ids:
+            cat = await Category.get(id=cat_id).prefetch_related("category_product")
+            if await cat.category_product.all().count() > 0:  # type: ignore
+                raise HTTPException(status_code=400, detail=f"Category {cat.name} has linked products")
 
+        # 모든 연관 카테고리 삭제 (CASCADE 설정으로 자동 삭제됨)
         await category.delete()
 
     @staticmethod
