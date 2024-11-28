@@ -19,11 +19,13 @@ async def check_login_id(
     user_service: UserService = Depends(),
 ) -> dict[str, str]:
     await user_service.check_login_id(login_id=login_id)
-
     return {"message": "Login ID is available."}
 
 
-@router.post("/verify-phone")
+@router.post(
+    "/verify-phone",
+    deprecated=True,
+)
 async def send_verification_code(
     phone_number: str,
     user_service: UserService = Depends(),
@@ -43,7 +45,6 @@ async def user_sign_up_handler(
 ) -> dict[str, str]:
     await user_service.create_user(user_data=body)
     return {"message": "User created successfully."}
-    # return UserResponseDto.build(user=new_user)
 
 
 @router.get(

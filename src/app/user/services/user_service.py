@@ -59,7 +59,7 @@ class UserService:
     @staticmethod
     async def check_login_id(login_id: str) -> None:
         user = await User.filter(login_id=login_id).first()
-        if not user:
+        if user:
             raise HTTPException(status_code=400, detail="This login ID is already taken.")
 
     async def send_sms_process(self, phone_number: str) -> None:
