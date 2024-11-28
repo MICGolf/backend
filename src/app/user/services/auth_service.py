@@ -20,6 +20,7 @@ from common.constants.auth_constants import (
     KAKAO_USER_INFO_URL,
     NAVER_TOKEN_URL,
     NAVER_USER_INFO_URL,
+    PASSWORD_RESET_TOKEN_EXPIRY_SECONDS,
 )
 from core.configs import settings
 
@@ -77,6 +78,20 @@ class AuthenticateService:
         payload: JwtPayloadTypedDict = {
             "user_id": user_id,  # 사용자 고유 ID
             "user_type": user_type,  # 사용자 역할 (예: guest, admin)
+            "isa": str(time.time()),
+            "iss": "oz-coding",
+        }
+        return jwt.encode(
+            payload=dict(payload),
+            key=JWT_SECRET_KEY,
+            algorithm=JWT_ALGORITHM,
+        )
+
+    @staticmethod
+    async def generate_reset_token(user_id: int, user_name: str) -> str:
+        payload: ResetTokenPayloadTypedDict = {
+            "user_id": user_id,
+            "user_name": user_name,
             "isa": str(time.time()),
             "iss": "oz-coding",
         }
@@ -192,12 +207,25 @@ class AuthenticateService:
         return cast(JwtPayloadTypedDict, payload)
 
     @staticmethod
+    async def _decode_reset_token(token: str) -> ResetTokenPayloadTypedDict:
+        payload = jwt.decode(
+            jwt=token,
+            key=JWT_SECRET_KEY,
+            algorithms=[JWT_ALGORITHM],
+        )
+        return cast(ResetTokenPayloadTypedDict, payload)
+
+    @staticmethod
     def is_valid_access_token(payload: JwtPayloadTypedDict) -> bool:
         return time.time() < float(payload["isa"]) + JWT_EXPIRY_SECONDS
 
     @staticmethod
     def is_valid_refresh_token(payload: JwtPayloadTypedDict) -> bool:
         return time.time() < float(payload["isa"]) + JWT_REFRESH_EXPIRY_SECONDS
+
+    @staticmethod
+    def is_valid_reset_token(payload: ResetTokenPayloadTypedDict) -> bool:
+        return time.time() < float(payload["isa"]) + PASSWORD_RESET_TOKEN_EXPIRY_SECONDS
 
     @staticmethod
     def _get_access_jwt(
@@ -230,17 +258,3 @@ class AuthenticateService:
     @staticmethod
     async def generate_verification_code() -> str:
         return str(random.randint(100000, 999999))
-
-    @staticmethod
-    def generate_reset_token(user_id: int, user_name: str) -> str:
-        payload: ResetTokenPayloadTypedDict = {
-            "user_id": user_id,
-            "user_name": user_name,
-            "isa": str(time.time()),
-            "iss": "oz-coding",
-        }
-        return jwt.encode(
-            payload=dict(payload),
-            key=JWT_SECRET_KEY,
-            algorithm=JWT_ALGORITHM,
-        )

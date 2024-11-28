@@ -1,8 +1,8 @@
 from typing import Any
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Request, status
 
-from app.user.dtos.request import UserCreateRequestDTO
+from app.user.dtos.request import PasswordResetRequestDTO, ResetPasswordRequest, UserCreateRequestDTO
 from app.user.dtos.response import JwtTokenResponseDTO, RefreshTokenRequest, UserLoginInfoResponseDTO
 from app.user.services.auth_service import AuthenticateService
 from app.user.services.user_service import UserService
@@ -59,6 +59,36 @@ async def find_login_id_handler(
     user_service: UserService = Depends(),
 ) -> UserLoginInfoResponseDTO:
     return await user_service.find_user_login_id_by_name_and_email(name=name, email=email)
+
+
+@router.post(
+    "/request-password-reset",
+    status_code=status.HTTP_200_OK,
+    summary="사용자 비밀번호 초기화 요청 API",
+    description="비밀번호 초기화 요청 API입니다",
+)
+async def reset_password_request_handler(
+    request: Request,
+    body: PasswordResetRequestDTO,
+    background_tasks: BackgroundTasks,
+    user_service: UserService = Depends(),
+) -> dict[str, str]:
+    background_tasks.add_task(user_service.send_password_reset_mail, body.name, body.login_id, str(request.base_url))
+    return {"message": "Password reset email sent."}
+
+
+@router.post(
+    "/reset-password",
+    status_code=status.HTTP_200_OK,
+    summary="사용자 비밀번호 초기화 API",
+    description="비밀번호 초기화 API입니다",
+)
+async def reset_password_handler(
+    request: ResetPasswordRequest,
+    user_service: UserService = Depends(),
+) -> dict[str, str]:
+    await user_service.reset_password(request.token, request.new_password)
+    return {"message": "Password reset successfully."}
 
 
 @router.post(

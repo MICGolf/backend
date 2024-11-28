@@ -1,9 +1,11 @@
 from fastapi import Depends, HTTPException
 
+from app.user.dtos.auth_dto import ResetTokenPayloadTypedDict
 from app.user.dtos.request import UserCreateRequestDTO
 from app.user.dtos.response import JwtTokenResponseDTO, UserLoginInfoResponseDTO
 from app.user.models.user import User
 from app.user.services.auth_service import AuthenticateService
+from common.constants.reset_email_message import EmailTemplates
 from common.exceptions.custom_exceptions import (
     InvalidPasswordException,
     SocialLoginConflictException,
@@ -123,6 +125,41 @@ class UserService:
         social_type = user.social_login_type if user.social_login_type else "none"
 
         return UserLoginInfoResponseDTO.build(login_type=login_type, social_type=social_type, email=user.email)
+
+    @staticmethod
+    async def get_user_by_name_and_login_id(name: str, login_id: str) -> User | None:
+        return await User.filter(name=name, login_id=login_id).first()
+
+    async def send_password_reset_mail(self, name: str, login_id: str, base_url: str) -> None:
+        user = await self.get_user_by_name_and_login_id(name, login_id)
+
+        if not user:
+            raise UserNotFoundException()
+
+        token = await self.auth_service.generate_reset_token(user_id=user.id, user_name=user.name)
+
+        reset_link = f"{base_url}reset-password?token={token}"
+
+        message = EmailTemplates.RESET_PASSWORD.format(user_name=user.name, reset_link=reset_link)
+
+        await self.email_service.send_email(subject="micgolf 비밀번호 초기화", to=user.email, message=message)
+
+    async def reset_password(self, token: str, new_password: str) -> None:
+        reset_token_payload: ResetTokenPayloadTypedDict = await self.auth_service._decode_reset_token(token)
+
+        if not self.auth_service.is_valid_reset_token(reset_token_payload):
+            raise HTTPException(status_code=400, detail="Reset Token Expired")
+
+        user = await User.get(id=reset_token_payload.get("user_id", ""))
+
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        hashed_password = self.auth_service.hash_password(plain_password=new_password)
+
+        user.password = hashed_password
+
+        await user.save()
 
     # 인증 코드 저장 (임시 저장, 만료 시간 설정)
     # await VerificationCode.create(phone_number=request.phone_number, code=verification_code)

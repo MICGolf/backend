@@ -4,6 +4,7 @@ JWT_SECRET_KEY = settings.JWT_SECRET_KEY
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRY_SECONDS = 24 * 60 * 60  # 하루: 24시간 * 60분 * 60초
 JWT_REFRESH_EXPIRY_SECONDS = 30 * 24 * 60 * 60  # 한 달 : 30일 * 24시간 * 60분 * 60초
+PASSWORD_RESET_TOKEN_EXPIRY_SECONDS = 5 * 60  # 5분
 
 
 KAKAO_TOKEN_URL = "https://kauth.kakao.com/oauth/token"
