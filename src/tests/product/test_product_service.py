@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, patch
 
 from fastapi import UploadFile
 from pydantic import ValidationError
+from starlette.datastructures import Headers
 from tortoise.contrib.test import TestCase
 
 from app.category.models.category import Category, CategoryProduct
@@ -59,14 +60,22 @@ class TestProductService(TestCase):
                 ),
             ],
             image_mapping={
-                "#FF0000": ["/path/to/red_image_1.jpg"],
-                "#0000FF": ["/path/to/blue_image_1.jpg"],
+                "#FF0000": ["red_image_1.jpg"],
+                "#0000FF": ["blue_image_1.jpg"],
             },
         )
 
         files_1 = [
-            UploadFile(filename="red_image_1.jpg", file=BytesIO(b"mock red image content")),
-            UploadFile(filename="blue_image_1.jpg", file=BytesIO(b"mock blue image content")),
+            UploadFile(
+                filename="red_image_1.jpg",
+                file=BytesIO(b"mock red image content"),
+                headers=Headers({"Content-Type": "image/jpeg"}),
+            ),
+            UploadFile(
+                filename="blue_image_1.jpg",
+                file=BytesIO(b"mock blue image content"),
+                headers=Headers({"Content-Type": "image/jpeg"}),
+            ),
         ]
 
         # 두 번째 상품 생성
@@ -95,14 +104,22 @@ class TestProductService(TestCase):
                 ),
             ],
             image_mapping={
-                "#00FF00": ["/path/to/green_image.jpg"],
-                "#FFFF00": ["/path/to/yellow_image.jpg"],
+                "#00FF00": ["green_image.jpg"],
+                "#FFFF00": ["yellow_image.jpg"],
             },
         )
 
         files_2 = [
-            UploadFile(filename="green_image.jpg", file=BytesIO(b"mock green image content")),
-            UploadFile(filename="yellow_image.jpg", file=BytesIO(b"mock yellow image content")),
+            UploadFile(
+                filename="green_image.jpg",
+                file=BytesIO(b"mock green image content"),
+                headers=Headers({"Content-Type": "image/jpeg"}),
+            ),
+            UploadFile(
+                filename="yellow_image.jpg",
+                file=BytesIO(b"mock yellow image content"),
+                headers=Headers({"Content-Type": "image/jpeg"}),
+            ),
         ]
 
         # 세 번째 상품 생성
@@ -126,12 +143,16 @@ class TestProductService(TestCase):
                 ),
             ],
             image_mapping={
-                "#00FF00": ["/path/to/green_image.jpg"],
+                "#00FF00": ["green_image.jpg"],
             },
         )
 
         files_3 = [
-            UploadFile(filename="green_image.jpg", file=BytesIO(b"mock green image content")),
+            UploadFile(
+                filename="green_image.jpg",
+                file=BytesIO(b"mock green image content"),
+                headers=Headers({"Content-Type": "image/jpeg"}),
+            ),
         ]
 
         # 서비스 호출
@@ -178,9 +199,9 @@ class TestProductService(TestCase):
         self.count_products_2 = await CountProduct.filter(product=self.product_2).prefetch_related("option").all()
         self.count_products_3 = await CountProduct.filter(product=self.product_3).prefetch_related("option").all()
 
-        self.option_images_1 = await OptionImage.filter(option__product=self.product_1).all()
-        self.option_images_2 = await OptionImage.filter(option__product=self.product_2).all()
-        self.option_images_3 = await OptionImage.filter(option__product=self.product_3).all()
+        self.option_images_1 = await OptionImage.filter(option__product=self.product_1).select_related("option").all()
+        self.option_images_2 = await OptionImage.filter(option__product=self.product_2).select_related("option").all()
+        self.option_images_3 = await OptionImage.filter(option__product=self.product_3).select_related("option").all()
 
     async def test_상품_단건_조회(self) -> None:
         # When: 단건 조회 호출
@@ -611,7 +632,14 @@ class TestProductService(TestCase):
             "green_image2.jpg",
         ]
 
-        mock_files = [UploadFile(filename=file_name, file=BytesIO(b"mock file content")) for file_name in files]
+        mock_files = [
+            UploadFile(
+                filename=file_name,
+                file=BytesIO(b"mock file content"),
+                headers=Headers({"Content-Type": "image/jpeg"}),
+            )
+            for file_name in files
+        ]
 
         # When: 상품 생성 서비스 호출
         await ProductService.create_product_with_options(
@@ -708,8 +736,16 @@ class TestProductService(TestCase):
         )
 
         files = [
-            UploadFile(filename="red_image_updated.jpg", file=BytesIO(b"mock red image content")),
-            UploadFile(filename="green_image_new.jpg", file=BytesIO(b"mock green image content")),
+            UploadFile(
+                filename="red_image_updated.jpg",
+                file=BytesIO(b"mock red image content"),
+                headers=Headers({"Content-Type": "image/jpeg"}),
+            ),
+            UploadFile(
+                filename="green_image_new.jpg",
+                file=BytesIO(b"mock green image content"),
+                headers=Headers({"Content-Type": "image/jpeg"}),
+            ),
         ]
 
         # When: 상품 업데이트 호출
@@ -790,3 +826,54 @@ class TestProductService(TestCase):
         # Then: 관련된 이미지가 삭제되었는지 확인
         remaining_images = await OptionImage.filter(option__product=self.product_1).all()
         assert len(remaining_images) == 0, f"상품 {product_id}의 이미지가 삭제되지 않았습니다."
+
+    @staticmethod
+    def create_mock_file(filename: str, content_type: str, content: bytes) -> UploadFile:
+        return UploadFile(
+            filename=filename,
+            file=BytesIO(content),
+            headers=Headers({"Content-Type": content_type}),
+        )
+
+    async def test_유효한_이미지(self) -> None:
+        files = [
+            self.create_mock_file("red_image_1.jpg", "image/jpeg", b"mock red image content"),
+            self.create_mock_file("blue_image_1.jpg", "image/jpeg", b"mock blue image content"),
+        ]
+
+        image_mapping = {"#FF0000": ["red_image_1.jpg"], "#0000FF": ["blue_image_1.jpg"]}
+
+        # _validate_images 메서드 호출
+        await ProductService._validate_images(files, image_mapping)
+
+    async def test_잘못된_확장자(self) -> None:
+        files = [self.create_mock_file("red_image_1.gif", "image/gif", b"mock red image content")]
+
+        image_mapping = {"#FF0000": ["red_image_1.gif"]}
+
+        with self.assertRaises(ValueError) as context:
+            await ProductService._validate_images(files, image_mapping)
+
+        self.assertEqual(str(context.exception), "Invalid image type: image/gif. Only JPEG and PNG are allowed.")
+
+    async def test_이미지_7장_초과(self) -> None:
+        files = [self.create_mock_file(f"red_image_{i}.jpg", "image/jpeg", b"mock red image content") for i in range(7)]
+
+        image_mapping = {"#FF0000": [f"red_image_{i}.jpg" for i in range(7)]}
+
+        with self.assertRaises(ValueError) as context:
+            await ProductService._validate_images(files, image_mapping)
+
+        self.assertEqual(str(context.exception), "Color #FF0000 already has the maximum of 6 images.")
+
+    async def test_옵션당_2MB_초과(self) -> None:
+        files = [
+            self.create_mock_file("red_image_1.jpg", "image/jpeg", b"x" * (2 * 1024 * 1024 + 1)),  # 2MB + 1 byte
+        ]
+
+        image_mapping = {"#FF0000": ["red_image_1.jpg"]}
+
+        with self.assertRaises(ValueError) as context:
+            await ProductService._validate_images(files, image_mapping)
+
+        self.assertEqual(str(context.exception), "Total image size for color #FF0000 exceeds the 2MB limit.")
