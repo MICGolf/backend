@@ -21,6 +21,7 @@ from app.product.dtos.request import (
 )
 from app.product.dtos.response import OptionDTO, OptionImageDTO, ProductDTO, ProductResponseDTO
 from app.product.models.product import CountProduct, Option, OptionImage, Product
+from common.exceptions.custom_exceptions import MaxImageSizeExceeded, MaxImagesPerColorExceeded
 from common.utils.ncp_s3_client import get_object_storage_client
 from core.configs import settings
 
@@ -187,17 +188,13 @@ class ProductService:
                 color_image_count[color_code] = 0
 
             if color_image_count[color_code] >= max_images_per_color:
-                raise ValueError(f"Color {color_code} already has the maximum of 6 images.")
+                raise MaxImagesPerColorExceeded(color_code=color_code, max_images=max_images_per_color)
 
             color_image_sizes[color_code] += file_size
             color_image_count[color_code] += 1
 
             if color_image_sizes[color_code] > max_size_per_color:
-                raise ValueError(f"Total image size for color {color_code} exceeds the 2MB limit.")
-
-        for color_code, images in image_mapping.items():
-            if len(images) > max_images_per_color:
-                raise ValueError(f"Color {color_code} has more than the allowed 6 images.")
+                raise MaxImageSizeExceeded(color_code=color_code, max_size=max_size_per_color)
 
     @staticmethod
     async def _process_images(
@@ -291,9 +288,6 @@ class ProductService:
         if category_id:
             category_ids = await CategoryService.get_category_and_subcategories(category_id=category_id)
             filters &= Q(product_category__category_id__in=category_ids)
-
-        if not filters:
-            return await Product.all(), await Option.get_all_with_stock_and_images()
 
         offset = (page - 1) * page_size
         limit = page_size
