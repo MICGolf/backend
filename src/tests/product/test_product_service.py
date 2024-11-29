@@ -877,3 +877,13 @@ class TestProductService(TestCase):
             await ProductService._validate_images(files, image_mapping)
 
         self.assertEqual(str(context.exception), "Total image size for color #FF0000 exceeds the 2MB limit.")
+
+    async def test_color_code_불일치(self) -> None:
+        files = [self.create_mock_file("red_image_1.jpg", "image/jpeg", b"mock red image content")]
+
+        image_mapping = {}
+
+        with self.assertRaises(ValueError) as context:
+            await ProductService._validate_images(files, image_mapping)
+
+        self.assertEqual(str(context.exception), f"Image red_image_1.jpg does not have a valid color code mapping.")
