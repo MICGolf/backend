@@ -27,13 +27,13 @@ async def health_check() -> dict[str, str]:
 
 
 @app.post("/webhook")
-async def webhook(request: Request):
+async def webhook(request: Request) -> dict[str, str]:
     payload = await request.json()
 
     # Push 이벤트 및 develop 브랜치 확인
     if payload.get("ref") == "refs/heads/develop":
         # Git pull 명령 실행
-        repo_path = "/path/to/your/repository"  # 서버의 레포지토리 경로
+        repo_path = "/root/backend/src"  # 서버의 레포지토리 경로
         try:
             subprocess.run(["git", "-C", repo_path, "pull", "origin", "develop"], check=True)
             return {"message": "Git pull executed successfully"}
