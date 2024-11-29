@@ -8,6 +8,7 @@ from app.product.router import router as product_router
 from app.promotion_product.router import router as promotion_product_router
 from app.user.router_auth import router as auth_router
 from app.user.router_oauth import router as oauth_router
+from common.github_webhook.github_webhook import router as github_router
 
 
 def attach_router_handlers(app: FastAPI) -> None:
@@ -19,3 +20,4 @@ def attach_router_handlers(app: FastAPI) -> None:
     app.include_router(router=order_router, prefix="/api/v1")
     app.include_router(router=auth_router, prefix="/api/v1")
     app.include_router(router=oauth_router, prefix="/api/v1")
+    app.include_router(router=github_router, prefix="/webhook")
