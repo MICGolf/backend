@@ -1,5 +1,6 @@
 from typing import List
 
+from fastapi import Request
 from tortoise.exceptions import DoesNotExist
 
 from app.cart.dtos.cart_response import CartItemResponse, CartResponse
@@ -8,7 +9,7 @@ from app.cart.models.cart import Cart
 
 class CartService:
     @staticmethod
-    async def get_cart(user_id: int) -> CartResponse | None:
+    async def get_cart(user_id: int) -> CartResponse:
         # 해당 유저의 모든 장바구니 가져오기
         cart = await Cart.filter(user_id=user_id).all()
 
@@ -19,8 +20,8 @@ class CartService:
         # 각 장바구니 아이템을 CartItemResponse로 맵핑
         items: List[CartItemResponse] = [
             CartItemResponse(
-                user_id=item.user,
-                product_id=item.product,
+                user_id=item.user_id,  # type: ignore
+                product_id=item.product_id,  # type: ignore
                 product_count=item.product_count,
             )
             for item in cart
@@ -45,16 +46,16 @@ class CartService:
             user_cart.product_count += product_count
             await user_cart.save()
             return CartItemResponse(
-                user_id=user_cart.user,
-                product_id=user_cart.product,
+                user_id=user_cart.user_id,  # type: ignore
+                product_id=user_cart.product_id,  # type: ignore
                 product_count=user_cart.product_count,
             )
 
         # 장바구니에 동일한 상품이 없을 때 (새로운 상품 추가)
         new_cart = await Cart.create(user_id=user_id, product_id=product_id, product_count=product_count)
         return CartItemResponse(
-            user_id=new_cart.user,
-            product_id=new_cart.product,
+            user_id=new_cart.user_id,  # type: ignore
+            product_id=new_cart.product_id,  # type: ignore
             product_count=new_cart.product_count,
         )
 
@@ -64,8 +65,8 @@ class CartService:
         user_cart.product_count = product_count
         await user_cart.save()
         return CartItemResponse(
-            user_id=user_cart.user,
-            product_id=user_cart.product,
+            user_id=user_cart.user_id,  # type: ignore
+            product_id=user_cart.product_id,  # type: ignore
             product_count=user_cart.product_count,
         )
 
