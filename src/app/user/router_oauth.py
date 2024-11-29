@@ -7,7 +7,7 @@ router = APIRouter(prefix="/oauth", tags=["Oauth 사용자 인증"])
 
 
 @router.post(
-    "/{social_type}/{is_auto}",
+    "/{social_type}",
     response_model=JwtTokenResponseDTO,
     summary="소셜 로그인 & 회원가입 API",
     status_code=status.HTTP_200_OK,

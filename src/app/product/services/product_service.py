@@ -116,6 +116,8 @@ class ProductService:
         image_mapping = product_create_dto.image_mapping
         category_id = product_create_dto.category_id
 
+        await cls._validate_images(files, image_mapping)
+
         product, category = await asyncio.gather(
             Product.create(**product_dto.model_dump()),
             Category.get(id=category_id),
@@ -154,6 +156,48 @@ class ProductService:
         await asyncio.gather(
             CountProduct.bulk_create(count_products_to_create), OptionImage.bulk_create(option_image_entries)
         )
+
+    @classmethod
+    async def _validate_images(cls, files: list[UploadFile], image_mapping: dict[str, list[str]]) -> None:
+        allowed_extensions = ["image/jpeg", "image/jpg", "image/png"]
+        max_size_per_color = 2 * 1024 * 1024
+        max_images_per_color = 6
+
+        color_image_sizes = {}
+        color_image_count = {}
+
+        for file in files:
+            if file.content_type not in allowed_extensions:
+                raise ValueError(f"Invalid image type: {file.content_type}. Only JPEG and PNG are allowed.")
+
+            file.file.seek(0)
+            file_size = len(file.file.read())
+
+            color_code = None
+            for key, values in image_mapping.items():
+                if file.filename in values:
+                    color_code = key
+                    break
+
+            if not color_code:
+                raise ValueError(f"Image {file.filename} does not have a valid color code mapping.")
+
+            if color_code not in color_image_sizes:
+                color_image_sizes[color_code] = 0
+                color_image_count[color_code] = 0
+
+            if color_image_count[color_code] >= max_images_per_color:
+                raise ValueError(f"Color {color_code} already has the maximum of 6 images.")
+
+            color_image_sizes[color_code] += file_size
+            color_image_count[color_code] += 1
+
+            if color_image_sizes[color_code] > max_size_per_color:
+                raise ValueError(f"Total image size for color {color_code} exceeds the 2MB limit.")
+
+        for color_code, images in image_mapping.items():
+            if len(images) > max_images_per_color:
+                raise ValueError(f"Color {color_code} has more than the allowed 6 images.")
 
     @staticmethod
     async def _process_images(
@@ -414,10 +458,13 @@ class ProductService:
         # 3. 옵션 업데이트
         updated_options = await cls._update_options(product, product_update_dto.options)
 
-        # # 4. 재고 업데이트
+        # 4. 재고 업데이트
         await cls._update_stock(product, product_update_dto.options)
 
-        # # 5. 이미지 업데이트
+        # 5. 이미지 검증 추가
+        await cls._validate_images(files, product_update_dto.image_mapping)
+
+        # 6. 이미지 업데이트
         await cls._update_images(
             product,
             updated_options["created"] + updated_options["updated"],
