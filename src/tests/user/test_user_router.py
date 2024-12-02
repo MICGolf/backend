@@ -1,4 +1,4 @@
-from unittest.mock import patch, AsyncMock
+from unittest.mock import AsyncMock, patch
 
 from fastapi import Depends
 from httpx import AsyncClient
@@ -64,7 +64,7 @@ class TestUserService(TestCase):
             )
 
         # Then
-        assert response.status_code == 400
+        assert response.status_code == 409
 
     async def test_일반_회원가입(self) -> None:
         # Given: Ensure the test_product is available
@@ -117,8 +117,8 @@ class TestUserService(TestCase):
                 json=login_data,
             )
 
-        assert response.status_code == 400
-        assert response.json()["code"] == 4001
+        assert response.status_code == 404
+        assert response.json()["code"] == 1001
 
     async def test_일반_로그인_실패_비밀번호_틀림(self) -> None:
         # Given
@@ -136,7 +136,7 @@ class TestUserService(TestCase):
 
         # Then
         assert response.status_code == 400
-        assert response.json()["code"] == 4002
+        assert response.json()["code"] == 1002
 
     async def test_사용자_아이디_조회_성공_일반유저(self) -> None:
         # Given
@@ -176,11 +176,9 @@ class TestUserService(TestCase):
                 params=request_data,
             )
 
-        response_data = response.json()
-
         # Then
-        assert response.status_code == 400
-        assert response.json()["code"] == 4001
+        assert response.status_code == 404
+        assert response.json()["code"] == 1001
 
     async def test_사용자_비밀번호_초기화_요청(self) -> None:
         # Given
@@ -250,4 +248,4 @@ class TestUserService(TestCase):
             )
 
         assert response.status_code == 400
-        assert response.json()["code"] == 4006
+        assert response.json()["code"] == 4001

@@ -5,8 +5,8 @@ from typing import Any, cast
 import bcrypt
 import httpx
 import jwt
-from fastapi import Depends, HTTPException, status
-from fastapi.security import APIKeyHeader, HTTPAuthorizationCredentials, HTTPBasic, HTTPBearer
+from fastapi import Depends
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBasic, HTTPBearer
 
 from app.user.dtos.auth_dto import JwtPayloadTypedDict, ResetTokenPayloadTypedDict, SocialUserInfo
 from app.user.dtos.response import JwtTokenResponseDTO
@@ -22,7 +22,16 @@ from common.constants.auth_constants import (
     NAVER_USER_INFO_URL,
     PASSWORD_RESET_TOKEN_EXPIRY_SECONDS,
 )
-from common.exceptions.custom_exceptions import InvalidPasswordException
+from common.exceptions.custom_exceptions import (
+    AccessTokenExpiredException,
+    InvalidPasswordException,
+    InvalidTokenException,
+    JWTAccessNotProvidedException,
+    RefreshTokenExpiredException,
+    SocialAccessTokenInvalidException,
+    SocialTokenRequestFailedException,
+    UnsupportedSocialLoginTypeException,
+)
 from core.configs import settings
 
 basic_auth = HTTPBasic()
@@ -66,7 +75,7 @@ class AuthenticateService:
                 name=user_info["response"]["name"],
             )
         else:
-            raise ValueError(f"Unsupported social login type: {social_type}")
+            raise UnsupportedSocialLoginTypeException(social_type=social_type)
 
     @staticmethod
     def generate_access_token(user_id: int, user_type: str, user_name: str) -> str:
@@ -118,7 +127,7 @@ class AuthenticateService:
         elif social_type == "naver":
             return await self._get_naver_access_token(code)
         else:
-            raise ValueError(f"Unsupported social login type: {social_type}")
+            raise UnsupportedSocialLoginTypeException(social_type=social_type)
 
     @staticmethod
     async def _get_kakao_access_token(code: str) -> str:
@@ -133,16 +142,13 @@ class AuthenticateService:
         async with httpx.AsyncClient() as client:
             response = await client.post(KAKAO_TOKEN_URL, data=data)
             if response.status_code != 200:
-                raise HTTPException(status_code=400, detail="카카오 토큰 요청 실패")
+                raise SocialTokenRequestFailedException(social_type="kakao")
 
             tokens: dict[str, Any] = response.json()
             access_token = tokens.get("access_token")
 
             if not access_token or not isinstance(access_token, str):
-                raise HTTPException(
-                    status_code=400,
-                    detail="Kakao access token is missing or invalid.",
-                )
+                raise SocialAccessTokenInvalidException(social_type="kakao")
             return str(access_token)
 
     @staticmethod
@@ -158,16 +164,13 @@ class AuthenticateService:
         async with httpx.AsyncClient() as client:
             response = await client.post(NAVER_TOKEN_URL, data=payload)
             if response.status_code != 200:
-                raise HTTPException(status_code=400, detail="네이버 토큰 요청 실패")
+                raise SocialTokenRequestFailedException(social_type="naver")
 
             tokens = response.json()
             access_token = tokens.get("access_token")
 
             if not access_token or not isinstance(access_token, str):
-                raise HTTPException(
-                    status_code=400,
-                    detail="Kakao access token is missing or invalid.",
-                )
+                raise SocialAccessTokenInvalidException(social_type="naver")
             return str(access_token)
 
     @staticmethod
@@ -197,7 +200,7 @@ class AuthenticateService:
         payload = self._decode_token(refresh_token)
 
         if not self.is_valid_refresh_token(payload):
-            raise HTTPException(status_code=401, detail="Refresh token has expired")
+            raise RefreshTokenExpiredException()
 
         return JwtTokenResponseDTO.build(
             access_token=self.generate_access_token(
@@ -242,10 +245,7 @@ class AuthenticateService:
         auth_header: HTTPAuthorizationCredentials = Depends(HTTPBearer(auto_error=False)),
     ) -> str:
         if auth_header is None or not auth_header.credentials:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="JWT access not provided",
-            )
+            raise JWTAccessNotProvidedException()
         return auth_header.credentials
 
     def get_user_id(
@@ -256,12 +256,12 @@ class AuthenticateService:
         access_token_payload = self._decode_token(access_token)
 
         if not self.is_valid_access_token(access_token_payload):
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token Expired")
+            raise AccessTokenExpiredException()
 
         user_id = access_token_payload.get("user_id")
 
         if user_id is None:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User ID not found in token")
+            raise InvalidTokenException()
 
         return user_id
 

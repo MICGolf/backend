@@ -8,9 +8,10 @@ from app.user.services.auth_service import AuthenticateService
 from common.constants.reset_email_message import EmailTemplates
 from common.exceptions.custom_exceptions import (
     InvalidPasswordException,
+    LoginIdAlreadyTakenException,
+    ResetTokenExpiredException,
     SocialLoginConflictException,
     UserNotFoundException,
-    ResetTokenExpiredException,
 )
 from common.utils.email_services import get_email_service
 from common.utils.email_services.email_service import EmailService
@@ -59,11 +60,10 @@ class UserService:
     async def check_login_id(login_id: str) -> None:
         user = await User.filter(login_id=login_id).first()
         if user:
-            raise HTTPException(status_code=400, detail="This login ID is already taken.")
+            raise LoginIdAlreadyTakenException()
 
     async def send_sms_process(self, phone_number: str) -> None:
         verification_code = await self.auth_service.generate_verification_code()
-        # SMS 발송
 
         await self.sms_service.send_sms(phone_number, verification_code)
 

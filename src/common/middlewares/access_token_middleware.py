@@ -5,6 +5,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.user.dtos.auth_dto import JwtPayloadTypedDict
 from app.user.services.auth_service import AuthenticateService
+from common.exceptions.custom_exceptions import AccessTokenExpiredException
 
 
 class AccessTokenMiddleware(BaseHTTPMiddleware):
@@ -23,7 +24,7 @@ class AccessTokenMiddleware(BaseHTTPMiddleware):
         payload: JwtPayloadTypedDict = self.auth_service._decode_token(token)
 
         if not self.auth_service.is_valid_access_token(payload):
-            raise HTTPException(status_code=401, detail="Access token has expired")
+            raise AccessTokenExpiredException()
 
         request.state.user = {
             "user_id": payload["user_id"],

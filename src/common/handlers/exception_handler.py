@@ -120,8 +120,7 @@ def attach_exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(CustomException)
     async def custom_exception_handler(request: Request, exc: CustomException) -> JSONResponse:
-        status_code = exc.error_code.code // 10
         return JSONResponse(
-            status_code=status_code,
+            status_code=exc.status_code,
             content=exc.to_dict(),
         )
