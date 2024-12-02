@@ -107,7 +107,7 @@ class UserService:
         return await self._handle_user(user)
 
     async def _handle_user(self, user: User) -> JwtTokenResponseDTO:
-        user.refresh_token_id = self.auth_service.generate_refresh_token(
+        user.refresh_token_id = await self.auth_service.generate_refresh_token(
             user_id=user.id, user_type=user.user_type, user_name=user.name
         )
         await user.save()
@@ -116,7 +116,7 @@ class UserService:
 
     async def _generate_jwt_response(self, user: User) -> JwtTokenResponseDTO:
         return JwtTokenResponseDTO.build(
-            access_token=self.auth_service.generate_access_token(
+            access_token=await self.auth_service.generate_access_token(
                 user_id=user.id,
                 user_type=user.user_type,
                 user_name=user.name,

@@ -9,7 +9,7 @@ from app.user.dtos.request import (
     UserLoginRequestDTO,
 )
 from app.user.dtos.response import JwtTokenResponseDTO, RefreshTokenRequest, UserLoginInfoResponseDTO
-from app.user.services.auth_service import AuthenticateService
+from app.user.services.auth_service import AuthenticateService, get_token_from_header
 from app.user.services.user_service import UserService
 
 router = APIRouter(prefix="/auth", tags=["사용자 인증"])
@@ -120,10 +120,10 @@ async def reset_password_handler(
     description="토큰 재발급 API입니다",
 )
 async def refresh_token(
-    request: RefreshTokenRequest,
+    access_token: str = Depends(get_token_from_header),
     auth_service: AuthenticateService = Depends(),
 ) -> JwtTokenResponseDTO:
-    return await auth_service.refresh_access_token(access_token=request.access_token)
+    return await auth_service.refresh_access_token(access_token=access_token)
 
 
 @router.get(

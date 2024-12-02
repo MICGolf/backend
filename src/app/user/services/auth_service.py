@@ -78,7 +78,7 @@ class AuthenticateService:
             raise UnsupportedSocialLoginTypeException(social_type=social_type)
 
     @staticmethod
-    def generate_access_token(user_id: int, user_type: str, user_name: str) -> str:
+    async def generate_access_token(user_id: int, user_type: str, user_name: str) -> str:
         payload: JwtPayloadTypedDict = {
             "user_id": user_id,  # 사용자 고유 ID
             "user_type": user_type,  # 사용자 역할 (예: guest, admin)
@@ -93,7 +93,7 @@ class AuthenticateService:
         )
 
     @staticmethod
-    def generate_refresh_token(user_id: int, user_type: str, user_name: str) -> str:
+    async def generate_refresh_token(user_id: int, user_type: str, user_name: str) -> str:
         payload: JwtPayloadTypedDict = {
             "user_id": user_id,  # 사용자 고유 ID
             "user_type": user_type,  # 사용자 역할 (예: guest, admin)
@@ -203,7 +203,7 @@ class AuthenticateService:
             raise RefreshTokenExpiredException()
 
         return JwtTokenResponseDTO.build(
-            access_token=self.generate_access_token(
+            access_token=await self.generate_access_token(
                 user_id=user.id,
                 user_type=user.user_type,
                 user_name=user.name,
@@ -228,13 +228,21 @@ class AuthenticateService:
         )
         return cast(ResetTokenPayloadTypedDict, payload)
 
-    @staticmethod
-    def is_valid_access_token(payload: JwtPayloadTypedDict) -> bool:
-        return time.time() < float(payload["isa"]) + JWT_EXPIRY_SECONDS
+    def is_valid_access_token(self, payload: JwtPayloadTypedDict) -> bool:
+        jwt_token_expiry = self._jwt_expiry_seconds()
+        return time.time() < float(payload["isa"]) + jwt_token_expiry
 
     @staticmethod
-    def is_valid_refresh_token(payload: JwtPayloadTypedDict) -> bool:
-        return time.time() < float(payload["isa"]) + JWT_REFRESH_EXPIRY_SECONDS
+    def _jwt_expiry_seconds() -> int:
+        return JWT_EXPIRY_SECONDS
+
+    def is_valid_refresh_token(self, payload: JwtPayloadTypedDict) -> bool:
+        refresh_token_expiry = self._jwt_refresh_expiry_seconds()
+        return time.time() < float(payload["isa"]) + refresh_token_expiry
+
+    @staticmethod
+    def _jwt_refresh_expiry_seconds() -> int:
+        return JWT_REFRESH_EXPIRY_SECONDS
 
     @staticmethod
     def is_valid_reset_token(payload: ResetTokenPayloadTypedDict) -> bool:
@@ -268,3 +276,13 @@ class AuthenticateService:
     @staticmethod
     async def generate_verification_code() -> str:
         return str(random.randint(100000, 999999))
+
+
+security = HTTPBearer(auto_error=False)
+
+
+# 헬퍼 함수 - 토큰만 뽑아오는 함수
+def get_token_from_header(credentials: HTTPAuthorizationCredentials = Depends(security)) -> str:
+    if credentials is None:
+        raise JWTAccessNotProvidedException()
+    return credentials.credentials

@@ -110,9 +110,6 @@ class AccessTokenExpiredException(CustomException):
     def __init__(self) -> None:
         super().__init__(ErrorCode.ACCESS_TOKEN_EXPIRED)
 
-    def __str__(self) -> str:
-        return "The access token has expired."
-
 
 class RefreshTokenExpiredException(CustomException):
     def __init__(self) -> None:

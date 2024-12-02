@@ -65,6 +65,7 @@ class TestUserService(TestCase):
 
         # Then
         assert response.status_code == 409
+        assert response.json()["code"] == 1003
 
     async def test_일반_회원가입(self) -> None:
         # Given: Ensure the test_product is available
@@ -84,6 +85,7 @@ class TestUserService(TestCase):
                 json=user_data,
             )
 
+        # Then
         assert response.status_code == 201
 
     async def test_일반_로그인_성공(self) -> None:
@@ -100,6 +102,7 @@ class TestUserService(TestCase):
                 json=login_data,
             )
 
+        # Then
         assert response.status_code == 200
         assert response.json()["access_token"] is not None
 
@@ -117,6 +120,7 @@ class TestUserService(TestCase):
                 json=login_data,
             )
 
+        # Then
         assert response.status_code == 404
         assert response.json()["code"] == 1001
 
@@ -247,5 +251,96 @@ class TestUserService(TestCase):
                 json=request_data,
             )
 
+        # Then
         assert response.status_code == 400
         assert response.json()["code"] == 4001
+
+    @patch("app.user.services.auth_service.AuthenticateService._jwt_expiry_seconds")
+    async def test_만료된_access_token_검증(self, mock_jwt_expiry_seconds: AsyncMock) -> None:
+        # Given
+        token = await self.user_service.auth_service.generate_access_token(
+            user_id=self.user_1.id, user_name=self.user_1.name, user_type=self.user_1.user_type
+        )
+
+        headers = {
+            "Accept": "application/json",
+            "Authorization": f"Bearer {token}",
+        }
+
+        mock_jwt_expiry_seconds.return_value = -1
+
+        # When
+        try:
+            async with AsyncClient(app=app, base_url="http://test") as ac:
+                response = await ac.get(
+                    url="/api/v1/auth/refresh",
+                    headers=headers,
+                )
+        except Exception as exc:
+            assert str(exc) == "Access token has expired."
+
+    async def test_refresh_token_발급_성공(self) -> None:
+        # Given
+        token = await self.user_service.auth_service.generate_access_token(
+            user_id=self.user_1.id, user_name=self.user_1.name, user_type=self.user_1.user_type
+        )
+        login_data = {
+            "login_id": "hong1",
+            "password": "Password1!",
+        }
+        headers = {
+            "Accept": "application/json",
+            "Authorization": f"Bearer {token}",
+        }
+
+        # When
+        async with AsyncClient(app=app, base_url="http://test") as ac:
+            response = await ac.post(
+                url="/api/v1/auth/login",
+                headers={"Accept": "application/json"},
+                json=login_data,
+            )
+
+        async with AsyncClient(app=app, base_url="http://test") as ac:
+            response = await ac.post(
+                url="/api/v1/auth/refresh",
+                headers=headers,
+            )
+
+        # Then
+        assert response.status_code == 200
+        assert response.json()["access_token"] is not None
+
+    @patch("app.user.services.auth_service.AuthenticateService._jwt_refresh_expiry_seconds")
+    async def test_refresh_token_만료_발급_실패(self, mock_refresh_expiry_seconds: AsyncMock) -> None:
+        # Given
+        token = await self.user_service.auth_service.generate_access_token(
+            user_id=self.user_1.id, user_name=self.user_1.name, user_type=self.user_1.user_type
+        )
+        login_data = {
+            "login_id": "hong1",
+            "password": "Password1!",
+        }
+        headers = {
+            "Accept": "application/json",
+            "Authorization": f"Bearer {token}",
+        }
+        mock_refresh_expiry_seconds.return_value = -1
+
+        # When
+        async with AsyncClient(app=app, base_url="http://test") as ac:
+            response = await ac.post(
+                url="/api/v1/auth/login",
+                headers={"Accept": "application/json"},
+                json=login_data,
+            )
+
+        async with AsyncClient(app=app, base_url="http://test") as ac:
+            response = await ac.post(
+                url="/api/v1/auth/refresh",
+                headers=headers,
+            )
+
+        # Then
+        assert response.status_code == 401
+        assert response.json()["code"] == 4003

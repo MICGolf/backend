@@ -6,6 +6,7 @@ from starlette.responses import JSONResponse
 from tortoise.exceptions import DoesNotExist, IntegrityError
 
 from common.exceptions.custom_exceptions import CustomException, SocialLoginConflictException
+from common.exceptions.error_code import ErrorCode
 from common.utils.logger import setup_logger
 from core.configs import settings
 
@@ -15,6 +16,15 @@ logger = setup_logger("error_logger", settings=settings, enable_tortoise_logging
 def attach_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(Exception)
     async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+        if str(exc) == ErrorCode.ACCESS_TOKEN_EXPIRED.value[1]:
+            return JSONResponse(
+                status_code=401,
+                content={
+                    "code": 401,
+                    "data": None,
+                    "message": str(exc),
+                },
+            )
         logger.error(f"Unexpected Error: {str(exc)} | Path: {request.url.path}", exc_info=exc)
         return JSONResponse(
             status_code=500,
