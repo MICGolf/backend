@@ -6,6 +6,7 @@ from pydantic import BaseModel
 class JwtPayloadTypedDict(TypedDict):
     user_id: int
     user_type: str
+    user_name: str
     isa: str
     iss: str
 
