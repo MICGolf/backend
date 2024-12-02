@@ -61,14 +61,14 @@ class AuthenticateService:
 
     async def get_social_user_info(self, access_token: str, social_type: str) -> SocialUserInfo:
         if social_type == "kakao":
-            user_info = await self.get_kakao_user_info(access_token)
+            user_info = await self._get_kakao_user_info(access_token)
             return SocialUserInfo.build(
                 email=user_info["kakao_account"]["email"],
                 social_id=str(user_info["id"]),
                 name=user_info["properties"]["nickname"],
             )
         elif social_type == "naver":
-            user_info = await self.get_naver_user_info(access_token)
+            user_info = await self._get_naver_user_info(access_token)
             return SocialUserInfo.build(
                 email=user_info["response"]["email"],
                 social_id=user_info["response"]["id"],
@@ -129,8 +129,7 @@ class AuthenticateService:
         else:
             raise UnsupportedSocialLoginTypeException(social_type=social_type)
 
-    @staticmethod
-    async def _get_kakao_access_token(code: str) -> str:
+    async def _get_kakao_access_token(self, code: str) -> str:
         data = {
             "grant_type": "authorization_code",
             "client_id": settings.KAKAO_CLIENT_ID,
@@ -139,42 +138,51 @@ class AuthenticateService:
             "code": code,
         }
 
-        async with httpx.AsyncClient() as client:
-            response = await client.post(KAKAO_TOKEN_URL, data=data)
-            if response.status_code != 200:
-                raise SocialTokenRequestFailedException(social_type="kakao")
+        response = await self._request_token(url=KAKAO_TOKEN_URL, data=data)
 
-            tokens: dict[str, Any] = response.json()
-            access_token = tokens.get("access_token")
+        if response.status_code != 200:
+            raise SocialTokenRequestFailedException(social_type="kakao")
 
-            if not access_token or not isinstance(access_token, str):
-                raise SocialAccessTokenInvalidException(social_type="kakao")
-            return str(access_token)
+        tokens: dict[str, Any] = response.json()
+        access_token = tokens.get("access_token")
 
-    @staticmethod
-    async def _get_naver_access_token(code: str) -> str:
-        payload = {
+        if not self._is_valid_token_format(access_token=access_token):
+            raise SocialAccessTokenInvalidException(social_type="kakao")
+
+        return str(access_token)
+
+    async def _get_naver_access_token(self, code: str) -> str:
+        data = {
             "grant_type": "authorization_code",
             "client_id": settings.NAVER_CLIENT_ID,
             "client_secret": settings.NAVER_CLIENT_SECRET,
             "redirect_uri": settings.NAVER_REDIRECT_URI,
             "code": code,
         }
+        response = await self._request_token(url=NAVER_TOKEN_URL, data=data)
 
-        async with httpx.AsyncClient() as client:
-            response = await client.post(NAVER_TOKEN_URL, data=payload)
-            if response.status_code != 200:
-                raise SocialTokenRequestFailedException(social_type="naver")
+        if response.status_code != 200:
+            raise SocialTokenRequestFailedException(social_type="naver")
 
-            tokens = response.json()
-            access_token = tokens.get("access_token")
+        tokens = response.json()
+        access_token = tokens.get("access_token")
 
-            if not access_token or not isinstance(access_token, str):
-                raise SocialAccessTokenInvalidException(social_type="naver")
-            return str(access_token)
+        if not self._is_valid_token_format(access_token=access_token):
+            raise SocialAccessTokenInvalidException(social_type="naver")
+
+        return str(access_token)
 
     @staticmethod
-    async def get_kakao_user_info(access_token: str) -> dict[str, Any]:
+    async def _request_token(url: str, data: dict[str, Any]) -> httpx.Response:
+        async with httpx.AsyncClient() as client:
+            return await client.post(url, data=data)
+
+    @staticmethod
+    def _is_valid_token_format(access_token: Any) -> bool:
+        return isinstance(access_token, str) and bool(access_token)
+
+    @staticmethod
+    async def _get_kakao_user_info(access_token: str) -> dict[str, Any]:
         headers = {"Authorization": f"Bearer {access_token}"}
         async with httpx.AsyncClient() as client:
             response = await client.get(KAKAO_USER_INFO_URL, headers=headers)
@@ -182,7 +190,7 @@ class AuthenticateService:
             return response.json()  # type: ignore
 
     @staticmethod
-    async def get_naver_user_info(access_token: str) -> dict[str, Any]:
+    async def _get_naver_user_info(access_token: str) -> dict[str, Any]:
         headers = {"Authorization": f"Bearer {access_token}"}
         async with httpx.AsyncClient() as client:
             response = await client.get(NAVER_USER_INFO_URL, headers=headers)

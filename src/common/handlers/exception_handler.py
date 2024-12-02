@@ -117,17 +117,6 @@ def attach_exception_handlers(app: FastAPI) -> None:
             },
         )
 
-    @app.exception_handler(SocialLoginConflictException)
-    async def social_login_conflict_handler(request: Request, exc: SocialLoginConflictException) -> JSONResponse:
-        return JSONResponse(
-            status_code=409,
-            content={
-                "code": 409,
-                "message": "The provided email is already associated with another social login type.",
-                "data": {"social_login_type": exc.social_login_type},
-            },
-        )
-
     @app.exception_handler(CustomException)
     async def custom_exception_handler(request: Request, exc: CustomException) -> JSONResponse:
         return JSONResponse(

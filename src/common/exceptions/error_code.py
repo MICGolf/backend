@@ -10,9 +10,9 @@ class ErrorCode(Enum):
     # 소셜 로그인 관련 에러 (2000 ~ 2999)
     SOCIAL_LOGIN_CONFLICT = (2001, "Social login conflict detected", 409)
     UNSUPPORTED_SOCIAL_LOGIN_TYPE = (2002, "Unsupported social login type", 400)
-    KAKAO_TOKEN_REQUEST_FAILED = (2003, "Kakao token request failed", 400)
+    KAKAO_TOKEN_REQUEST_FAILED = (2003, "Kakao token request failed", 500)
     KAKAO_ACCESS_TOKEN_INVALID = (2004, "Kakao access token is missing or invalid", 400)
-    NAVER_TOKEN_REQUEST_FAILED = (2005, "Naver token request failed", 400)
+    NAVER_TOKEN_REQUEST_FAILED = (2005, "Naver token request failed", 500)
     NAVER_ACCESS_TOKEN_INVALID = (2006, "Naver access token is missing or invalid", 400)
 
     # 파일 관련 에러 (3000 ~ 3999)
