@@ -2,6 +2,7 @@ from typing import Any, List, Optional, Union
 
 from fastapi import HTTPException
 from tortoise.expressions import Q
+from tortoise.functions import Count
 
 from app.category.dtos.category_request import (
     CategoryChildRequest,
@@ -86,19 +87,29 @@ class CategoryService:
 
     @staticmethod
     async def delete_category(category_id: int) -> None:
+        # 카테고리와 하위 카테고리 한번에 조회
         category = await Category.get_or_none(id=category_id).prefetch_related("subcategory", "category_product")
         if not category:
             raise HTTPException(status_code=404, detail="Category not found")
 
-        if await category.subcategory.all().count() > 0:  # type: ignore
-            raise HTTPException(status_code=400, detail="Cannot delete category with subcategories")
+        # 현재 카테고리와 하위 카테고리들의 ID 수집
+        subcategory_ids = [category.id]
+        subcategories = await category.subcategory.all()  # type: ignore
+        subcategory_ids.extend([sub.id for sub in subcategories])
 
-        if await category.category_product.all().count() > 0:  # type: ignore
-            raise HTTPException(status_code=400, detail="Cannot delete category with products")
+        # 모든 연관된 카테고리의 상품 연결 여부를 한번에 확인
+        categories_with_products = (
+            await Category.filter(id__in=subcategory_ids)
+            .annotate(product_count=Count("category_product"))
+            .values("id", "name", "product_count")
+        )
 
-        if category.depth == 0:
-            raise HTTPException(status_code=400, detail="최상단 카테고리는 삭제할 수 없습니다.")
+        # 연결된 상품이 있는지 확인
+        for cat in categories_with_products:
+            if cat["product_count"] > 0:
+                raise HTTPException(status_code=400, detail=f"Category {cat['name']} has linked products")
 
+        # 모든 연관 카테고리 삭제
         await category.delete()
 
     @staticmethod

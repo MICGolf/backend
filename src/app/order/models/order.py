@@ -25,6 +25,8 @@ class NonUserOrderProduct(BaseModel):
         related_name="product_order",
         on_delete=fields.CASCADE,
     )  # type: ignore
+
+    option_id = fields.IntField(null=True)  # 추가
     quantity = fields.IntField(default=1)
     price = fields.DecimalField(max_digits=10, decimal_places=2)
     courier = fields.CharField(max_length=255, null=True)

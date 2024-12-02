@@ -100,9 +100,14 @@ class TestCategoryService(TestCase):
     async def test_delete_category_with_subcategories(self) -> None:
         # given
         parent = await Category.create(name="Parent")
-        await Category.create(name="Child", parent_id=parent.pk, depth=1)
+        child = await Category.create(name="Child", parent_id=parent.pk, depth=1)
 
-        # when & then
-        with self.assertRaises(HTTPException) as context:
-            await CategoryService.delete_category(parent.pk)
-        self.assertEqual(context.exception.status_code, 400)
+        # when
+        await CategoryService.delete_category(parent.pk)
+
+        # then
+        # 부모와 자식 카테고리 모두 삭제되었는지 확인
+        deleted_parent = await Category.get_or_none(id=parent.pk)
+        deleted_child = await Category.get_or_none(id=child.pk)
+        self.assertIsNone(deleted_parent)
+        self.assertIsNone(deleted_child)
