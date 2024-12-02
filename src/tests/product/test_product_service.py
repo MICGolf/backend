@@ -291,8 +291,8 @@ class TestProductService(TestCase):
 
     async def test_상품_조회_상품명으로_검색(self) -> None:
         # When
-        response = await ProductService.get_products_with_options(product_name="Test Product 1")
-
+        products_response_dto = await ProductService.get_products_with_options(product_name="Test Product 1")
+        response = products_response_dto.products
         # Then
         assert len(response) == 1
         assert response[0].product.name == "Test Product 1"
@@ -303,13 +303,14 @@ class TestProductService(TestCase):
         response = await ProductService._get_filtered_products_and_options(product_id=self.product_2.id)
 
         # Then
-        products, _ = response
+        products, _, _ = response
         assert len(products) == 1
         assert products[0].id == self.product_2.id
 
     async def test_상품_조회_상품코드로_검색(self) -> None:
         # When
-        response = await ProductService.get_products_with_options(product_code="TEST-PRODUCT-3")
+        products_response_dto = await ProductService.get_products_with_options(product_code="TEST-PRODUCT-3")
+        response = products_response_dto.products
 
         # Then
         assert len(response) == 1
@@ -317,7 +318,8 @@ class TestProductService(TestCase):
 
     async def test_상품_조회_판매상태로_검색_Y(self) -> None:
         # When
-        response = await ProductService.get_products_with_options(sale_status="Y")
+        products_response_dto = await ProductService.get_products_with_options(sale_status="Y")
+        response = products_response_dto.products
 
         # Then
         assert len(response) == 3  # 모든 상품이 "Y" 상태로 설정됨
@@ -327,7 +329,8 @@ class TestProductService(TestCase):
 
     async def test_상품_조회_판매상태로_검색_N(self) -> None:
         # When
-        response = await ProductService.get_products_with_options(sale_status="N")
+        products_response_dto = await ProductService.get_products_with_options(sale_status="N")
+        response = products_response_dto.products
 
         # Then
         assert len(response) == 1
@@ -335,7 +338,8 @@ class TestProductService(TestCase):
 
     async def test_상품_조회_카테고리ID로_검색(self) -> None:
         # When
-        response = await ProductService.get_products_with_options(category_id=self.category_1.id)
+        products_response_dto = await ProductService.get_products_with_options(category_id=self.category_1.id)
+        response = products_response_dto.products
 
         # Then
         products = [self.product_1.product_code, self.product_2.product_code]
@@ -349,17 +353,19 @@ class TestProductService(TestCase):
         # When
         start_date = datetime.now() - timedelta(days=1)
         end_date = datetime.now() + timedelta(days=1)
-        response = await ProductService.get_products_with_options(start_date=start_date, end_date=end_date)
+        products_response_dto = await ProductService.get_products_with_options(start_date=start_date, end_date=end_date)
+        response = products_response_dto.products
 
         # Then
         assert len(response) == 4  # 모두 해당 날짜 범위에 생성됨
 
     async def test_상품_조회_상품명과_판매상태_조합(self) -> None:
         # When
-        response = await ProductService.get_products_with_options(
+        products_response_dto = await ProductService.get_products_with_options(
             product_name="Test Product 1",
             sale_status="Y",
         )
+        response = products_response_dto.products
 
         # Then
         assert len(response) == 1
@@ -370,21 +376,23 @@ class TestProductService(TestCase):
         # When
         start_date = datetime.now() - timedelta(days=1)
         end_date = datetime.now() + timedelta(days=1)
-        response = await ProductService.get_products_with_options(
+        products_response_dto = await ProductService.get_products_with_options(
             category_id=self.category_1.id,
             start_date=start_date,
             end_date=end_date,
         )
+        response = products_response_dto.products
 
         # Then
         assert len(response) == 2  # 모든 상품이 동일한 카테고리 및 날짜 범위에 해당
 
     async def test_상품_조회_상품코드와_판매상태_조합(self) -> None:
         # When
-        response = await ProductService.get_products_with_options(
+        products_response_dto = await ProductService.get_products_with_options(
             product_code="TEST-PRODUCT-2",
             sale_status="Y",
         )
+        response = products_response_dto.products
 
         # Then
         assert len(response) == 1
@@ -394,10 +402,11 @@ class TestProductService(TestCase):
     async def test_상품_조회_상품명과_시작일_조합(self) -> None:
         # When
         start_date = datetime.now() - timedelta(days=1)
-        response = await ProductService.get_products_with_options(
+        products_response_dto = await ProductService.get_products_with_options(
             product_name="Test Product 3",
             start_date=start_date,
         )
+        response = products_response_dto.products
 
         # Then
         assert len(response) == 1
@@ -406,11 +415,12 @@ class TestProductService(TestCase):
     async def test_상품_조회_카테고리와_상품명과_종료일_조합(self) -> None:
         # When
         end_date = datetime.now() + timedelta(days=1)
-        response = await ProductService.get_products_with_options(
+        products_response_dto = await ProductService.get_products_with_options(
             category_id=self.category_1.id,
             product_name="Test Product 2",
             end_date=end_date,
         )
+        response = products_response_dto.products
 
         # Then
         assert len(response) == 1
@@ -420,11 +430,12 @@ class TestProductService(TestCase):
         # When
         start_date = datetime.now() - timedelta(days=1)
         end_date = datetime.now() + timedelta(days=1)
-        response = await ProductService.get_products_with_options(
+        products_response_dto = await ProductService.get_products_with_options(
             product_id=self.product_1.id,
             start_date=start_date,
             end_date=end_date,
         )
+        response = products_response_dto.products
 
         # Then
         assert len(response) == 1
@@ -434,11 +445,12 @@ class TestProductService(TestCase):
         # When
         start_date = datetime.now() - timedelta(days=10)
         end_date = datetime.now()
-        response = await ProductService.get_products_with_options(
+        products_response_dto = await ProductService.get_products_with_options(
             sale_status="Y",
             start_date=start_date,
             end_date=end_date,
         )
+        response = products_response_dto.products
 
         # Then
         assert len(response) > 0
@@ -447,20 +459,22 @@ class TestProductService(TestCase):
 
     async def test_상품_조회_조건_불일치(self) -> None:
         # When
-        response = await ProductService.get_products_with_options(
+        products_response_dto = await ProductService.get_products_with_options(
             product_name="Non-existent Product",
             sale_status="N",
         )
+        response = products_response_dto.products
 
         # Then
         assert len(response) == 0
 
     async def test_상품_조회_페이지와_페이지크기(self) -> None:
         # When
-        response = await ProductService.get_products_with_options(
+        products_response_dto = await ProductService.get_products_with_options(
             page=1,
             page_size=2,
         )
+        response = products_response_dto.products
 
         # Then
         assert len(response) == 2  # 페이지 크기만큼 반환
@@ -469,10 +483,11 @@ class TestProductService(TestCase):
 
     async def test_상품_조회_가격기준_정렬_오름차순(self) -> None:
         # When
-        response = await ProductService.get_products_with_options(
+        products_response_dto = await ProductService.get_products_with_options(
             sort="price",
             order="asc",
         )
+        response = products_response_dto.products
 
         # Then
         assert len(response) > 0
@@ -481,10 +496,11 @@ class TestProductService(TestCase):
 
     async def test_상품_조회_가격기준_정렬_내림차순(self) -> None:
         # When
-        response = await ProductService.get_products_with_options(
+        products_response_dto = await ProductService.get_products_with_options(
             sort="price",
             order="desc",
         )
+        response = products_response_dto.products
 
         # Then
         assert len(response) > 0
@@ -493,12 +509,13 @@ class TestProductService(TestCase):
 
     async def test_상품_조회_페이지와_정렬_조합(self) -> None:
         # When
-        response = await ProductService.get_products_with_options(
+        products_response_dto = await ProductService.get_products_with_options(
             page=1,
             page_size=4,
             sort="created_at",
             order="asc",
         )
+        response = products_response_dto.products
 
         # Then
         assert len(response) == 4
@@ -507,17 +524,19 @@ class TestProductService(TestCase):
 
     async def test_상품_조회_페이지크기_범위초과(self) -> None:
         # When
-        response = await ProductService.get_products_with_options(
+        products_response_dto = await ProductService.get_products_with_options(
             page=3,
             page_size=2,
         )
+        response = products_response_dto.products
 
         # Then
         assert len(response) == 0
 
     async def test_상품_조회_기본정렬(self) -> None:
         # When
-        response = await ProductService.get_products_with_options()
+        products_response_dto = await ProductService.get_products_with_options()
+        response = products_response_dto.products
 
         # Then
         assert len(response) > 0
@@ -526,7 +545,9 @@ class TestProductService(TestCase):
 
     async def test_상품_조회_조건없음(self) -> None:
         # When
-        response = await ProductService.get_products_with_options()
+        products_response_dto = await ProductService.get_products_with_options()
+        response = products_response_dto.products
+
         # Then
         assert len(response) == 4
 

@@ -1,6 +1,5 @@
 import asyncio
 import itertools
-import os
 import unicodedata
 from datetime import datetime
 from io import BytesIO
@@ -19,7 +18,7 @@ from app.product.dtos.request import (
     ProductWithOptionCreateRequestDTO,
     ProductWithOptionUpdateRequestDTO,
 )
-from app.product.dtos.response import OptionDTO, OptionImageDTO, ProductDTO, ProductResponseDTO
+from app.product.dtos.response import OptionDTO, OptionImageDTO, ProductDTO, ProductResponseDTO, ProductsResponseDTO
 from app.product.models.product import CountProduct, Option, OptionImage, Product
 from common.exceptions.custom_exceptions import MaxImageSizeExceeded, MaxImagesPerColorExceeded
 from common.utils.ncp_s3_client import get_object_storage_client
@@ -53,9 +52,9 @@ class ProductService:
         page_size: int = 10,
         sort: str = "created_at",
         order: str = "desc",
-    ) -> list[ProductResponseDTO]:
+    ) -> ProductsResponseDTO:
 
-        products, options = await cls._get_filtered_products_and_options(
+        products, options, total_count = await cls._get_filtered_products_and_options(
             product_name=product_name,
             product_id=product_id,
             product_code=product_code,
@@ -85,7 +84,7 @@ class ProductService:
             for product_id in product_map.keys()
         ]
 
-        return product_response_dtos
+        return ProductsResponseDTO.build(products=product_response_dtos, total_count=total_count)
 
     @staticmethod
     def map_options_by_color(options: list[Option]) -> list[OptionDTO]:
@@ -269,7 +268,7 @@ class ProductService:
         page_size: int = 10,
         sort: str = "created_at",
         order: str = "desc",
-    ) -> tuple[list[Product], list[Option]]:
+    ) -> tuple[list[Product], list[Option], int]:
         filters = Q()
 
         if product_name:
@@ -295,10 +294,12 @@ class ProductService:
         order_by = f"-{sort}" if order == "desc" else sort
 
         products = await Product.filter(filters).offset(offset).limit(limit).order_by(order_by)
+        total_count = await Product.filter(filters).count()
+
         product_ids = [product.id for product in products]
         options = await Option.get_by_product_ids(product_ids=product_ids)
 
-        return products, options
+        return products, options, total_count
 
     @classmethod
     async def update_products_status(cls, product_ids: list[int], status: str) -> None:

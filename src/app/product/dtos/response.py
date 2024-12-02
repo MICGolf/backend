@@ -52,8 +52,9 @@ class ProductResponseDTO(BaseModel):
 
 
 class ProductsResponseDTO(BaseModel):
-    products: list[ProductDTO]
+    products: list[ProductResponseDTO]
+    total_count: int
 
     @classmethod
-    def build(cls, products: list[ProductDTO]) -> "ProductsResponseDTO":
-        return cls(products=products)
+    def build(cls, products: list[ProductResponseDTO], total_count: int) -> "ProductsResponseDTO":
+        return cls(products=products, total_count=total_count)

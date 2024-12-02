@@ -17,7 +17,7 @@ class Product(BaseModel):
     id = fields.IntField(pk=True)
     name = fields.CharField(max_length=255)
     price = fields.DecimalField(max_digits=10, decimal_places=2)
-    discount = fields.DecimalField(max_digits=5, decimal_places=2, default=0.00)
+    discount = fields.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     discount_option = fields.CharEnumField(DiscountOption, max_length=10, default=DiscountOption.PERCENT)
     origin_price = fields.DecimalField(max_digits=10, decimal_places=2)
     description = fields.TextField(null=True)
