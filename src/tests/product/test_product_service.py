@@ -5,10 +5,12 @@ from unittest.mock import AsyncMock, patch
 
 from fastapi import UploadFile
 from pydantic import ValidationError
+from starlette.datastructures import Headers
 from tortoise.contrib.test import TestCase
 
 from app.category.models.category import Category, CategoryProduct
 from app.product.dtos.request import (
+    BatchUpdateStatusRequest,
     OptionDTO,
     OptionUpdateDTO,
     ProductDTO,
@@ -22,6 +24,7 @@ from app.product.dtos.request import (
 from app.product.dtos.response import ProductResponseDTO
 from app.product.models.product import CountProduct, Option, OptionImage, Product
 from app.product.services.product_service import ProductService
+from common.exceptions.custom_exceptions import MaxImageSizeExceeded, MaxImagesPerColorExceeded
 
 
 class TestProductService(TestCase):
@@ -59,14 +62,22 @@ class TestProductService(TestCase):
                 ),
             ],
             image_mapping={
-                "#FF0000": ["/path/to/red_image_1.jpg"],
-                "#0000FF": ["/path/to/blue_image_1.jpg"],
+                "#FF0000": ["red_image_1.jpg"],
+                "#0000FF": ["blue_image_1.jpg"],
             },
         )
 
         files_1 = [
-            UploadFile(filename="red_image_1.jpg", file=BytesIO(b"mock red image content")),
-            UploadFile(filename="blue_image_1.jpg", file=BytesIO(b"mock blue image content")),
+            UploadFile(
+                filename="red_image_1.jpg",
+                file=BytesIO(b"mock red image content"),
+                headers=Headers({"Content-Type": "image/jpeg"}),
+            ),
+            UploadFile(
+                filename="blue_image_1.jpg",
+                file=BytesIO(b"mock blue image content"),
+                headers=Headers({"Content-Type": "image/jpeg"}),
+            ),
         ]
 
         # 두 번째 상품 생성
@@ -95,14 +106,22 @@ class TestProductService(TestCase):
                 ),
             ],
             image_mapping={
-                "#00FF00": ["/path/to/green_image.jpg"],
-                "#FFFF00": ["/path/to/yellow_image.jpg"],
+                "#00FF00": ["green_image.jpg"],
+                "#FFFF00": ["yellow_image.jpg"],
             },
         )
 
         files_2 = [
-            UploadFile(filename="green_image.jpg", file=BytesIO(b"mock green image content")),
-            UploadFile(filename="yellow_image.jpg", file=BytesIO(b"mock yellow image content")),
+            UploadFile(
+                filename="green_image.jpg",
+                file=BytesIO(b"mock green image content"),
+                headers=Headers({"Content-Type": "image/jpeg"}),
+            ),
+            UploadFile(
+                filename="yellow_image.jpg",
+                file=BytesIO(b"mock yellow image content"),
+                headers=Headers({"Content-Type": "image/jpeg"}),
+            ),
         ]
 
         # 세 번째 상품 생성
@@ -126,12 +145,16 @@ class TestProductService(TestCase):
                 ),
             ],
             image_mapping={
-                "#00FF00": ["/path/to/green_image.jpg"],
+                "#00FF00": ["green_image.jpg"],
             },
         )
 
         files_3 = [
-            UploadFile(filename="green_image.jpg", file=BytesIO(b"mock green image content")),
+            UploadFile(
+                filename="green_image.jpg",
+                file=BytesIO(b"mock green image content"),
+                headers=Headers({"Content-Type": "image/jpeg"}),
+            ),
         ]
 
         # 서비스 호출
@@ -178,9 +201,17 @@ class TestProductService(TestCase):
         self.count_products_2 = await CountProduct.filter(product=self.product_2).prefetch_related("option").all()
         self.count_products_3 = await CountProduct.filter(product=self.product_3).prefetch_related("option").all()
 
-        self.option_images_1 = await OptionImage.filter(option__product=self.product_1).all()
-        self.option_images_2 = await OptionImage.filter(option__product=self.product_2).all()
-        self.option_images_3 = await OptionImage.filter(option__product=self.product_3).all()
+        self.option_images_1 = await OptionImage.filter(option__product=self.product_1).select_related("option").all()
+        self.option_images_2 = await OptionImage.filter(option__product=self.product_2).select_related("option").all()
+        self.option_images_3 = await OptionImage.filter(option__product=self.product_3).select_related("option").all()
+
+    @staticmethod
+    def create_mock_file(filename: str, content_type: str, content: bytes) -> UploadFile:
+        return UploadFile(
+            filename=filename,
+            file=BytesIO(content),
+            headers=Headers({"Content-Type": content_type}),
+        )
 
     async def test_상품_단건_조회(self) -> None:
         # When: 단건 조회 호출
@@ -260,8 +291,8 @@ class TestProductService(TestCase):
 
     async def test_상품_조회_상품명으로_검색(self) -> None:
         # When
-        response = await ProductService.get_products_with_options(product_name="Test Product 1")
-
+        products_response_dto = await ProductService.get_products_with_options(product_name="Test Product 1")
+        response = products_response_dto.products
         # Then
         assert len(response) == 1
         assert response[0].product.name == "Test Product 1"
@@ -272,13 +303,14 @@ class TestProductService(TestCase):
         response = await ProductService._get_filtered_products_and_options(product_id=self.product_2.id)
 
         # Then
-        products, _ = response
+        products, _, _ = response
         assert len(products) == 1
         assert products[0].id == self.product_2.id
 
     async def test_상품_조회_상품코드로_검색(self) -> None:
         # When
-        response = await ProductService.get_products_with_options(product_code="TEST-PRODUCT-3")
+        products_response_dto = await ProductService.get_products_with_options(product_code="TEST-PRODUCT-3")
+        response = products_response_dto.products
 
         # Then
         assert len(response) == 1
@@ -286,7 +318,8 @@ class TestProductService(TestCase):
 
     async def test_상품_조회_판매상태로_검색_Y(self) -> None:
         # When
-        response = await ProductService.get_products_with_options(sale_status="Y")
+        products_response_dto = await ProductService.get_products_with_options(sale_status="Y")
+        response = products_response_dto.products
 
         # Then
         assert len(response) == 3  # 모든 상품이 "Y" 상태로 설정됨
@@ -296,7 +329,8 @@ class TestProductService(TestCase):
 
     async def test_상품_조회_판매상태로_검색_N(self) -> None:
         # When
-        response = await ProductService.get_products_with_options(sale_status="N")
+        products_response_dto = await ProductService.get_products_with_options(sale_status="N")
+        response = products_response_dto.products
 
         # Then
         assert len(response) == 1
@@ -304,7 +338,8 @@ class TestProductService(TestCase):
 
     async def test_상품_조회_카테고리ID로_검색(self) -> None:
         # When
-        response = await ProductService.get_products_with_options(category_id=self.category_1.id)
+        products_response_dto = await ProductService.get_products_with_options(category_id=self.category_1.id)
+        response = products_response_dto.products
 
         # Then
         products = [self.product_1.product_code, self.product_2.product_code]
@@ -318,17 +353,19 @@ class TestProductService(TestCase):
         # When
         start_date = datetime.now() - timedelta(days=1)
         end_date = datetime.now() + timedelta(days=1)
-        response = await ProductService.get_products_with_options(start_date=start_date, end_date=end_date)
+        products_response_dto = await ProductService.get_products_with_options(start_date=start_date, end_date=end_date)
+        response = products_response_dto.products
 
         # Then
         assert len(response) == 4  # 모두 해당 날짜 범위에 생성됨
 
     async def test_상품_조회_상품명과_판매상태_조합(self) -> None:
         # When
-        response = await ProductService.get_products_with_options(
+        products_response_dto = await ProductService.get_products_with_options(
             product_name="Test Product 1",
             sale_status="Y",
         )
+        response = products_response_dto.products
 
         # Then
         assert len(response) == 1
@@ -339,21 +376,23 @@ class TestProductService(TestCase):
         # When
         start_date = datetime.now() - timedelta(days=1)
         end_date = datetime.now() + timedelta(days=1)
-        response = await ProductService.get_products_with_options(
+        products_response_dto = await ProductService.get_products_with_options(
             category_id=self.category_1.id,
             start_date=start_date,
             end_date=end_date,
         )
+        response = products_response_dto.products
 
         # Then
         assert len(response) == 2  # 모든 상품이 동일한 카테고리 및 날짜 범위에 해당
 
     async def test_상품_조회_상품코드와_판매상태_조합(self) -> None:
         # When
-        response = await ProductService.get_products_with_options(
+        products_response_dto = await ProductService.get_products_with_options(
             product_code="TEST-PRODUCT-2",
             sale_status="Y",
         )
+        response = products_response_dto.products
 
         # Then
         assert len(response) == 1
@@ -363,10 +402,11 @@ class TestProductService(TestCase):
     async def test_상품_조회_상품명과_시작일_조합(self) -> None:
         # When
         start_date = datetime.now() - timedelta(days=1)
-        response = await ProductService.get_products_with_options(
+        products_response_dto = await ProductService.get_products_with_options(
             product_name="Test Product 3",
             start_date=start_date,
         )
+        response = products_response_dto.products
 
         # Then
         assert len(response) == 1
@@ -375,11 +415,12 @@ class TestProductService(TestCase):
     async def test_상품_조회_카테고리와_상품명과_종료일_조합(self) -> None:
         # When
         end_date = datetime.now() + timedelta(days=1)
-        response = await ProductService.get_products_with_options(
+        products_response_dto = await ProductService.get_products_with_options(
             category_id=self.category_1.id,
             product_name="Test Product 2",
             end_date=end_date,
         )
+        response = products_response_dto.products
 
         # Then
         assert len(response) == 1
@@ -389,11 +430,12 @@ class TestProductService(TestCase):
         # When
         start_date = datetime.now() - timedelta(days=1)
         end_date = datetime.now() + timedelta(days=1)
-        response = await ProductService.get_products_with_options(
+        products_response_dto = await ProductService.get_products_with_options(
             product_id=self.product_1.id,
             start_date=start_date,
             end_date=end_date,
         )
+        response = products_response_dto.products
 
         # Then
         assert len(response) == 1
@@ -403,11 +445,12 @@ class TestProductService(TestCase):
         # When
         start_date = datetime.now() - timedelta(days=10)
         end_date = datetime.now()
-        response = await ProductService.get_products_with_options(
+        products_response_dto = await ProductService.get_products_with_options(
             sale_status="Y",
             start_date=start_date,
             end_date=end_date,
         )
+        response = products_response_dto.products
 
         # Then
         assert len(response) > 0
@@ -416,20 +459,22 @@ class TestProductService(TestCase):
 
     async def test_상품_조회_조건_불일치(self) -> None:
         # When
-        response = await ProductService.get_products_with_options(
+        products_response_dto = await ProductService.get_products_with_options(
             product_name="Non-existent Product",
             sale_status="N",
         )
+        response = products_response_dto.products
 
         # Then
         assert len(response) == 0
 
     async def test_상품_조회_페이지와_페이지크기(self) -> None:
         # When
-        response = await ProductService.get_products_with_options(
+        products_response_dto = await ProductService.get_products_with_options(
             page=1,
             page_size=2,
         )
+        response = products_response_dto.products
 
         # Then
         assert len(response) == 2  # 페이지 크기만큼 반환
@@ -438,10 +483,11 @@ class TestProductService(TestCase):
 
     async def test_상품_조회_가격기준_정렬_오름차순(self) -> None:
         # When
-        response = await ProductService.get_products_with_options(
+        products_response_dto = await ProductService.get_products_with_options(
             sort="price",
             order="asc",
         )
+        response = products_response_dto.products
 
         # Then
         assert len(response) > 0
@@ -450,10 +496,11 @@ class TestProductService(TestCase):
 
     async def test_상품_조회_가격기준_정렬_내림차순(self) -> None:
         # When
-        response = await ProductService.get_products_with_options(
+        products_response_dto = await ProductService.get_products_with_options(
             sort="price",
             order="desc",
         )
+        response = products_response_dto.products
 
         # Then
         assert len(response) > 0
@@ -462,12 +509,13 @@ class TestProductService(TestCase):
 
     async def test_상품_조회_페이지와_정렬_조합(self) -> None:
         # When
-        response = await ProductService.get_products_with_options(
+        products_response_dto = await ProductService.get_products_with_options(
             page=1,
             page_size=4,
             sort="created_at",
             order="asc",
         )
+        response = products_response_dto.products
 
         # Then
         assert len(response) == 4
@@ -476,22 +524,32 @@ class TestProductService(TestCase):
 
     async def test_상품_조회_페이지크기_범위초과(self) -> None:
         # When
-        response = await ProductService.get_products_with_options(
+        products_response_dto = await ProductService.get_products_with_options(
             page=3,
             page_size=2,
         )
+        response = products_response_dto.products
 
         # Then
         assert len(response) == 0
 
     async def test_상품_조회_기본정렬(self) -> None:
         # When
-        response = await ProductService.get_products_with_options()
+        products_response_dto = await ProductService.get_products_with_options()
+        response = products_response_dto.products
 
         # Then
         assert len(response) > 0
         created_dates = [product.product.id for product in response]
         assert created_dates == sorted(created_dates, reverse=True)
+
+    async def test_상품_조회_조건없음(self) -> None:
+        # When
+        products_response_dto = await ProductService.get_products_with_options()
+        response = products_response_dto.products
+
+        # Then
+        assert len(response) == 4
 
     async def test_상품_생성_요청_옵션_1개(self) -> None:
         # Given: 상품 생성 요청 DTO (옵션이 1개인 경우)
@@ -611,7 +669,14 @@ class TestProductService(TestCase):
             "green_image2.jpg",
         ]
 
-        mock_files = [UploadFile(filename=file_name, file=BytesIO(b"mock file content")) for file_name in files]
+        mock_files = [
+            UploadFile(
+                filename=file_name,
+                file=BytesIO(b"mock file content"),
+                headers=Headers({"Content-Type": "image/jpeg"}),
+            )
+            for file_name in files
+        ]
 
         # When: 상품 생성 서비스 호출
         await ProductService.create_product_with_options(
@@ -662,14 +727,13 @@ class TestProductService(TestCase):
             option_images_for_option = [img for img in option_images if img.option_id == option.id]  # type: ignore
 
             extracted_image_names = [img.image_url.split("/")[-1].split("_", 1)[-1] for img in option_images_for_option]
-            print(extracted_image_names)
-            print(expected_images)
+
             assert set(extracted_image_names) == set(
                 expected_images
             ), f"Expected images {expected_images} but got {extracted_image_names}"
 
     @patch("common.utils.object_storage.ObjectStorageClient._upload")
-    async def test_update_product_with_options(self, _: AsyncMock) -> None:
+    async def test_상품_수정_요청_옵션_여러_개(self, _: AsyncMock) -> None:
 
         product_id = self.product_1.id
 
@@ -708,8 +772,16 @@ class TestProductService(TestCase):
         )
 
         files = [
-            UploadFile(filename="red_image_updated.jpg", file=BytesIO(b"mock red image content")),
-            UploadFile(filename="green_image_new.jpg", file=BytesIO(b"mock green image content")),
+            UploadFile(
+                filename="red_image_updated.jpg",
+                file=BytesIO(b"mock red image content"),
+                headers=Headers({"Content-Type": "image/jpeg"}),
+            ),
+            UploadFile(
+                filename="green_image_new.jpg",
+                file=BytesIO(b"mock green image content"),
+                headers=Headers({"Content-Type": "image/jpeg"}),
+            ),
         ]
 
         # When: 상품 업데이트 호출
@@ -776,7 +848,7 @@ class TestProductService(TestCase):
             ), f"Expected images {expected_images} but got {extracted_image_names} for option {option.color_code}."
 
     @patch("common.utils.object_storage.ObjectStorageClient.delete_file")
-    async def test_delete_product(self, _: AsyncMock) -> None:
+    async def test_단일_상품_삭제(self, _: AsyncMock) -> None:
         # Given: 삭제할 상품 준비
         product_id = self.product_1.id
 
@@ -790,3 +862,76 @@ class TestProductService(TestCase):
         # Then: 관련된 이미지가 삭제되었는지 확인
         remaining_images = await OptionImage.filter(option__product=self.product_1).all()
         assert len(remaining_images) == 0, f"상품 {product_id}의 이미지가 삭제되지 않았습니다."
+
+    async def test_유효한_이미지(self) -> None:
+        files = [
+            self.create_mock_file("red_image_1.jpg", "image/jpeg", b"mock red image content"),
+            self.create_mock_file("blue_image_1.jpg", "image/jpeg", b"mock blue image content"),
+        ]
+
+        image_mapping = {"#FF0000": ["red_image_1.jpg"], "#0000FF": ["blue_image_1.jpg"]}
+
+        # _validate_images 메서드 호출
+        await ProductService._validate_images(files, image_mapping)
+
+    async def test_잘못된_확장자(self) -> None:
+        files = [self.create_mock_file("red_image_1.gif", "image/gif", b"mock red image content")]
+
+        image_mapping = {"#FF0000": ["red_image_1.gif"]}
+
+        with self.assertRaises(ValueError) as context:
+            await ProductService._validate_images(files, image_mapping)
+
+        self.assertEqual(str(context.exception), "Invalid image type: image/gif. Only JPEG and PNG are allowed.")
+
+    async def test_이미지_7장_초과(self) -> None:
+        files = [self.create_mock_file(f"red_image_{i}.jpg", "image/jpeg", b"mock red image content") for i in range(7)]
+
+        image_mapping = {"#FF0000": [f"red_image_{i}.jpg" for i in range(7)]}
+
+        with self.assertRaises(MaxImagesPerColorExceeded) as context:
+            await ProductService._validate_images(files, image_mapping)
+
+        self.assertEqual(str(context.exception.color_code), "#FF0000")
+
+    async def test_옵션당_2MB_초과(self) -> None:
+        files = [
+            self.create_mock_file("red_image_1.jpg", "image/jpeg", b"x" * (2 * 1024 * 1024 + 1)),  # 2MB + 1 byte
+        ]
+
+        image_mapping = {"#FF0000": ["red_image_1.jpg"]}
+
+        with self.assertRaises(MaxImageSizeExceeded) as context:
+            await ProductService._validate_images(files, image_mapping)
+
+        assert context.exception.max_size < 2 * 1024 * 1024 + 1
+
+    async def test_color_code_불일치(self) -> None:
+        files = [self.create_mock_file("red_image_1.jpg", "image/jpeg", b"mock red image content")]
+
+        image_mapping: dict[str, list[str]] = {}
+
+        with self.assertRaises(ValueError) as context:
+            await ProductService._validate_images(files, image_mapping)
+
+        self.assertEqual(str(context.exception), f"Image red_image_1.jpg does not have a valid color code mapping.")
+
+    async def test_상품_상태_업데이트(self) -> None:
+        # Given
+        batch_request = BatchUpdateStatusRequest(product_ids=[1, 2], status="N")
+
+        # When
+        await ProductService.update_products_status(batch_request.product_ids, batch_request.status)
+
+        # Then
+        updated_products = await Product.filter(id__in=batch_request.product_ids).all()
+
+        for product in updated_products:
+            self.assertEqual(product.status, batch_request.status)
+
+    async def test_상품_업데이트_카테고리_동일(self) -> None:
+        await ProductService._update_category(product=self.product_1, new_category_id=self.category_1.id)
+
+        category = await Category.get(id=self.category_1.id)
+
+        assert self.category_1.id == category.id

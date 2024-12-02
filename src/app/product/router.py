@@ -8,7 +8,7 @@ from app.product.dtos.request import (
     ProductWithOptionCreateRequestDTO,
     ProductWithOptionUpdateRequestDTO,
 )
-from app.product.dtos.response import ProductResponseDTO
+from app.product.dtos.response import ProductResponseDTO, ProductsResponseDTO
 from app.product.example_schema.create_request_example import (
     PRODUCT_CREATE_DESCRIPTION,
     PRODUCT_CREATE_REQUEST_EXAMPLE_SCHEMA,
@@ -37,14 +37,14 @@ async def get_product_handler(
 @router.get(
     "",
     status_code=status.HTTP_200_OK,
-    response_model=list[ProductResponseDTO],
+    response_model=ProductsResponseDTO,
     summary="상품 전체 조회 API",
     description="상품 전체 조회로 다양한 조건으로 필터링하여 조회가 가능합니다",
 )
 async def get_products_handler(
     filters: ProductFilterRequestDTO = Depends(),
     pagination_and_sorting: PaginationAndSortingDTO = Depends(),
-) -> list[ProductResponseDTO]:
+) -> ProductsResponseDTO:
     return await ProductService.get_products_with_options(
         product_name=filters.product_name,
         product_id=filters.product_id,

@@ -1,6 +1,5 @@
 import asyncio
 import itertools
-import os
 import unicodedata
 from datetime import datetime
 from io import BytesIO
@@ -19,8 +18,9 @@ from app.product.dtos.request import (
     ProductWithOptionCreateRequestDTO,
     ProductWithOptionUpdateRequestDTO,
 )
-from app.product.dtos.response import OptionDTO, OptionImageDTO, ProductDTO, ProductResponseDTO
+from app.product.dtos.response import OptionDTO, OptionImageDTO, ProductDTO, ProductResponseDTO, ProductsResponseDTO
 from app.product.models.product import CountProduct, Option, OptionImage, Product
+from common.exceptions.custom_exceptions import MaxImageSizeExceeded, MaxImagesPerColorExceeded
 from common.utils.ncp_s3_client import get_object_storage_client
 from core.configs import settings
 
@@ -52,9 +52,9 @@ class ProductService:
         page_size: int = 10,
         sort: str = "created_at",
         order: str = "desc",
-    ) -> list[ProductResponseDTO]:
+    ) -> ProductsResponseDTO:
 
-        products, options = await cls._get_filtered_products_and_options(
+        products, options, total_count = await cls._get_filtered_products_and_options(
             product_name=product_name,
             product_id=product_id,
             product_code=product_code,
@@ -84,7 +84,7 @@ class ProductService:
             for product_id in product_map.keys()
         ]
 
-        return product_response_dtos
+        return ProductsResponseDTO.build(products=product_response_dtos, total_count=total_count)
 
     @staticmethod
     def map_options_by_color(options: list[Option]) -> list[OptionDTO]:
@@ -115,6 +115,8 @@ class ProductService:
         option_dtos = product_create_dto.options
         image_mapping = product_create_dto.image_mapping
         category_id = product_create_dto.category_id
+
+        await cls._validate_images(files, image_mapping)
 
         product, category = await asyncio.gather(
             Product.create(**product_dto.model_dump()),
@@ -154,6 +156,44 @@ class ProductService:
         await asyncio.gather(
             CountProduct.bulk_create(count_products_to_create), OptionImage.bulk_create(option_image_entries)
         )
+
+    @classmethod
+    async def _validate_images(cls, files: list[UploadFile], image_mapping: dict[str, list[str]]) -> None:
+        allowed_extensions = ["image/jpeg", "image/jpg", "image/png"]
+        max_size_per_color = 2 * 1024 * 1024
+        max_images_per_color = 6
+
+        color_image_sizes = {}
+        color_image_count = {}
+
+        for file in files:
+            if file.content_type not in allowed_extensions:
+                raise ValueError(f"Invalid image type: {file.content_type}. Only JPEG and PNG are allowed.")
+
+            file.file.seek(0)
+            file_size = len(file.file.read())
+
+            color_code = None
+            for key, values in image_mapping.items():
+                if file.filename in values:
+                    color_code = key
+                    break
+
+            if not color_code:
+                raise ValueError(f"Image {file.filename} does not have a valid color code mapping.")
+
+            if color_code not in color_image_sizes:
+                color_image_sizes[color_code] = 0
+                color_image_count[color_code] = 0
+
+            if color_image_count[color_code] >= max_images_per_color:
+                raise MaxImagesPerColorExceeded(color_code=color_code, max_images=max_images_per_color)
+
+            color_image_sizes[color_code] += file_size
+            color_image_count[color_code] += 1
+
+            if color_image_sizes[color_code] > max_size_per_color:
+                raise MaxImageSizeExceeded(color_code=color_code, max_size=max_size_per_color)
 
     @staticmethod
     async def _process_images(
@@ -228,7 +268,7 @@ class ProductService:
         page_size: int = 10,
         sort: str = "created_at",
         order: str = "desc",
-    ) -> tuple[list[Product], list[Option]]:
+    ) -> tuple[list[Product], list[Option], int]:
         filters = Q()
 
         if product_name:
@@ -248,19 +288,18 @@ class ProductService:
             category_ids = await CategoryService.get_category_and_subcategories(category_id=category_id)
             filters &= Q(product_category__category_id__in=category_ids)
 
-        if not filters:
-            return await Product.all(), await Option.get_all_with_stock_and_images()
-
         offset = (page - 1) * page_size
         limit = page_size
 
         order_by = f"-{sort}" if order == "desc" else sort
 
         products = await Product.filter(filters).offset(offset).limit(limit).order_by(order_by)
+        total_count = await Product.filter(filters).count()
+
         product_ids = [product.id for product in products]
         options = await Option.get_by_product_ids(product_ids=product_ids)
 
-        return products, options
+        return products, options, total_count
 
     @classmethod
     async def update_products_status(cls, product_ids: list[int], status: str) -> None:
@@ -414,10 +453,13 @@ class ProductService:
         # 3. 옵션 업데이트
         updated_options = await cls._update_options(product, product_update_dto.options)
 
-        # # 4. 재고 업데이트
+        # 4. 재고 업데이트
         await cls._update_stock(product, product_update_dto.options)
 
-        # # 5. 이미지 업데이트
+        # 5. 이미지 검증 추가
+        await cls._validate_images(files, product_update_dto.image_mapping)
+
+        # 6. 이미지 업데이트
         await cls._update_images(
             product,
             updated_options["created"] + updated_options["updated"],
