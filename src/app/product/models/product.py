@@ -1,5 +1,6 @@
 from enum import StrEnum
 
+from fastapi import HTTPException, status
 from tortoise import fields
 from tortoise.fields import ReverseRelation
 from tortoise.functions import Sum
@@ -69,6 +70,28 @@ class Option(BaseModel):
             .annotate(stock=Sum("option_stock__count"))
             .prefetch_related("images")
         )
+
+    @classmethod
+    async def get_option_with_stock(cls, product_id: int, color: str, size: str) -> tuple["Option", int]:
+        """
+        주어진 product_id, color, size에 해당하는 Option과 재고를 반환.
+        """
+        option = await cls.filter(product_id=product_id, color=color, size=size).prefetch_related("images").first()
+        if not option:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="The specified option does not exist.",
+            )
+
+        # 재고 확인
+        stock = await CountProduct.filter(product_id=product_id, option_id=option.id).first()
+        if not stock:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Stock information is not available for this option.",
+            )
+
+        return option, stock.count
 
 
 class OptionImage(BaseModel):
