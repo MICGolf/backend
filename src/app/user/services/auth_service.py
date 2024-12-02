@@ -22,6 +22,7 @@ from common.constants.auth_constants import (
     NAVER_USER_INFO_URL,
     PASSWORD_RESET_TOKEN_EXPIRY_SECONDS,
 )
+from common.exceptions.custom_exceptions import InvalidPasswordException
 from core.configs import settings
 
 basic_auth = HTTPBasic()
@@ -42,7 +43,12 @@ class AuthenticateService:
         )
 
     async def verify_password(self, input_password: str, stored_hashed_password: str) -> bool:
-        return await self.check_password(input_password, stored_hashed_password)
+        is_valid = await self.check_password(input_password, stored_hashed_password)
+
+        if not is_valid:
+            raise InvalidPasswordException()
+
+        return True
 
     async def get_social_user_info(self, access_token: str, social_type: str) -> SocialUserInfo:
         if social_type == "kakao":
@@ -63,10 +69,11 @@ class AuthenticateService:
             raise ValueError(f"Unsupported social login type: {social_type}")
 
     @staticmethod
-    def generate_access_token(user_id: int, user_type: str) -> str:
+    def generate_access_token(user_id: int, user_type: str, user_name: str) -> str:
         payload: JwtPayloadTypedDict = {
             "user_id": user_id,  # 사용자 고유 ID
             "user_type": user_type,  # 사용자 역할 (예: guest, admin)
+            "user_name": user_name,
             "isa": str(time.time()),
             "iss": "oz-coding",
         }
@@ -77,10 +84,11 @@ class AuthenticateService:
         )
 
     @staticmethod
-    def generate_refresh_token(user_id: int, user_type: str) -> str:
+    def generate_refresh_token(user_id: int, user_type: str, user_name: str) -> str:
         payload: JwtPayloadTypedDict = {
             "user_id": user_id,  # 사용자 고유 ID
             "user_type": user_type,  # 사용자 역할 (예: guest, admin)
+            "user_name": user_name,
             "isa": str(time.time()),
             "iss": "oz-coding",
         }
@@ -195,9 +203,8 @@ class AuthenticateService:
             access_token=self.generate_access_token(
                 user_id=user.id,
                 user_type=user.user_type,
+                user_name=user.name,
             ),
-            user_id=user.id,
-            name=user.name,
         )
 
     @staticmethod

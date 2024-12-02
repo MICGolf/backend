@@ -8,7 +8,7 @@ from pydantic import ValidationError
 from starlette.datastructures import Headers
 from tortoise.contrib.test import TestCase
 
-from app.category.models.category import Category, CategoryProduct
+from app.category.models.category import Category
 from app.product.dtos.request import (
     BatchUpdateStatusRequest,
     OptionDTO,

@@ -10,6 +10,7 @@ from common.exceptions.custom_exceptions import (
     InvalidPasswordException,
     SocialLoginConflictException,
     UserNotFoundException,
+    ResetTokenExpiredException,
 )
 from common.utils.email_services import get_email_service
 from common.utils.email_services.email_service import EmailService
@@ -72,8 +73,7 @@ class UserService:
         if not user:
             raise UserNotFoundException()
 
-        if not self.auth_service.verify_password(password, user.password):
-            raise InvalidPasswordException()
+        await self.auth_service.verify_password(password, user.password)
 
         return await self._handle_user(user)
 
@@ -107,7 +107,9 @@ class UserService:
         return await self._handle_user(user)
 
     async def _handle_user(self, user: User) -> JwtTokenResponseDTO:
-        user.refresh_token_id = self.auth_service.generate_refresh_token(user_id=user.id, user_type=user.user_type)
+        user.refresh_token_id = self.auth_service.generate_refresh_token(
+            user_id=user.id, user_type=user.user_type, user_name=user.name
+        )
         await user.save()
 
         return await self._generate_jwt_response(user)
@@ -117,9 +119,8 @@ class UserService:
             access_token=self.auth_service.generate_access_token(
                 user_id=user.id,
                 user_type=user.user_type,
-            ),
-            user_id=user.id,
-            name=user.name,
+                user_name=user.name,
+            )
         )
 
     @staticmethod
@@ -127,13 +128,15 @@ class UserService:
         user = await User.filter(name=name, email=email).first()
 
         if not user:
-            raise HTTPException(status_code=404, detail="User not found")
+            raise UserNotFoundException()
 
         login_type = "social" if user.social_login_type else "normal"
 
         social_type = user.social_login_type if user.social_login_type else "none"
 
-        return UserLoginInfoResponseDTO.build(login_type=login_type, social_type=social_type, email=user.email)
+        login_id = "None" if user.social_login_type else user.login_id
+
+        return UserLoginInfoResponseDTO.build(login_type=login_type, social_type=social_type, login_id=login_id)
 
     @staticmethod
     async def get_user_by_name_and_login_id(name: str, login_id: str) -> User | None:
@@ -157,12 +160,12 @@ class UserService:
         reset_token_payload: ResetTokenPayloadTypedDict = await self.auth_service._decode_reset_token(token)
 
         if not self.auth_service.is_valid_reset_token(reset_token_payload):
-            raise HTTPException(status_code=400, detail="Reset Token Expired")
+            raise ResetTokenExpiredException()
 
         user = await User.get(id=reset_token_payload.get("user_id", ""))
 
         if not user:
-            raise HTTPException(status_code=404, detail="User not found")
+            raise UserNotFoundException()
 
         hashed_password = await self.auth_service.hash_password(plain_password=new_password)
 

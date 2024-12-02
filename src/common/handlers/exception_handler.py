@@ -5,7 +5,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 from tortoise.exceptions import DoesNotExist, IntegrityError
 
-from common.exceptions.custom_exceptions import SocialLoginConflictException
+from common.exceptions.custom_exceptions import CustomException, SocialLoginConflictException
 from common.utils.logger import setup_logger
 from core.configs import settings
 
@@ -116,4 +116,12 @@ def attach_exception_handlers(app: FastAPI) -> None:
                 "message": "The provided email is already associated with another social login type.",
                 "data": {"social_login_type": exc.social_login_type},
             },
+        )
+
+    @app.exception_handler(CustomException)
+    async def custom_exception_handler(request: Request, exc: CustomException) -> JSONResponse:
+        status_code = exc.error_code.code // 10
+        return JSONResponse(
+            status_code=status_code,
+            content=exc.to_dict(),
         )
