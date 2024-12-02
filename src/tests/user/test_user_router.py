@@ -1,6 +1,5 @@
 from unittest.mock import AsyncMock, patch
 
-from fastapi import Depends
 from httpx import AsyncClient
 from tortoise.contrib.test import TestCase
 
@@ -32,7 +31,11 @@ class TestUserService(TestCase):
         sms_service = get_sms_service()
         email_service = get_email_service()
 
-        self.user_service = UserService(auth_service=auth_service, sms_service=sms_service, email_service=email_service)
+        self.user_service = UserService(
+            auth_service=auth_service,
+            sms_service=sms_service,
+            email_service=email_service,
+        )
 
         self.user_1 = await self.user_service.create_user(body)
 
