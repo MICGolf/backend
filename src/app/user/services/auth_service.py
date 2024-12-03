@@ -1,6 +1,6 @@
 import random
 import time
-from typing import Any, cast
+from typing import Any, Optional, cast
 
 import bcrypt
 import httpx
@@ -121,11 +121,11 @@ class AuthenticateService:
             algorithm=JWT_ALGORITHM,
         )
 
-    async def get_access_token(self, code: str, social_type: str) -> str:
+    async def get_access_token(self, code: str, social_type: str, state: Optional[str] = None) -> str:
         if social_type == "kakao":
-            return await self._get_kakao_access_token(code)
+            return await self._get_kakao_access_token(code=code)
         elif social_type == "naver":
-            return await self._get_naver_access_token(code)
+            return await self._get_naver_access_token(code=code, state=state)
         else:
             raise UnsupportedSocialLoginTypeException(social_type=social_type)
 
@@ -151,13 +151,14 @@ class AuthenticateService:
 
         return str(access_token)
 
-    async def _get_naver_access_token(self, code: str) -> str:
+    async def _get_naver_access_token(self, code: str, state: Optional[str] = None) -> str:
         data = {
             "grant_type": "authorization_code",
             "client_id": settings.NAVER_CLIENT_ID,
             "client_secret": settings.NAVER_CLIENT_SECRET,
             "redirect_uri": settings.NAVER_REDIRECT_URI,
             "code": code,
+            "state": state,
         }
         response = await self._request_token(url=NAVER_TOKEN_URL, data=data)
 

@@ -1,3 +1,5 @@
+from typing import Optional
+
 from fastapi import Depends, HTTPException
 
 from app.user.dtos.auth_dto import ResetTokenPayloadTypedDict
@@ -78,8 +80,8 @@ class UserService:
 
         return await self._handle_user(user)
 
-    async def handle_oauth_login(self, code: str, social_type: str) -> JwtTokenResponseDTO:
-        access_token = await self.auth_service.get_access_token(code=code, social_type=social_type)
+    async def handle_oauth_login(self, code: str, social_type: str, state: Optional[str] = None) -> JwtTokenResponseDTO:
+        access_token = await self.auth_service.get_access_token(code=code, social_type=social_type, state=state)
         social_user_info = await self.auth_service.get_social_user_info(
             access_token=access_token, social_type=social_type
         )
