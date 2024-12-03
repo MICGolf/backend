@@ -17,6 +17,7 @@ from common.utils.email_services import get_email_service
 from common.utils.email_services.email_service import EmailService
 from common.utils.sms_services import get_sms_service
 from common.utils.sms_services.sms_service import SmsService
+from core.configs import settings
 
 
 class UserService:
@@ -154,7 +155,10 @@ class UserService:
 
         token = await self.auth_service.generate_reset_token(user_id=user.id, user_name=user.name)
 
-        reset_link = f"{base_url}reset-password?token={token}"
+        if settings.ENV == "local":
+            reset_link = f"http://localhost:5173/auth/reset-password?token={token}"
+        else:
+            reset_link = f"{base_url}auth/reset-password?token={token}"
 
         message = EmailTemplates.RESET_PASSWORD.format(user_name=user.name, reset_link=reset_link)
 
