@@ -130,13 +130,17 @@ class UserService:
         if not user:
             raise UserNotFoundException()
 
-        login_type = "social" if user.social_login_type else "normal"
+        login_type = []
 
-        social_type = user.social_login_type if user.social_login_type else "none"
+        if user.social_login_type:
+            login_type.append(user.social_login_type)
 
-        login_id = "None" if user.social_login_type else user.login_id
+        if user.login_id != user.social_id:
+            login_type.append("email")
 
-        return UserLoginInfoResponseDTO.build(login_type=login_type, social_type=social_type, login_id=login_id)
+        login_id = user.email if user.social_login_type else user.login_id
+
+        return UserLoginInfoResponseDTO.build(login_type=login_type, login_id=login_id)
 
     @staticmethod
     async def get_user_by_name_and_login_id(name: str, login_id: str) -> User | None:

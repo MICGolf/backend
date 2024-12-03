@@ -165,8 +165,109 @@ class TestUserService(TestCase):
         # Then
         assert response.status_code == 200
         assert response_data["login_id"] == "hong1"
-        assert response_data["login_type"] == "normal"
-        assert response_data["social_type"] == "none"
+        assert response_data["login_type"] == ["email"]
+
+    async def test_사용자_아이디_조회_성공_소셜유저_카카오(self) -> None:
+        # Given
+        request_data = {
+            "name": "홍길동",
+            "email": "test_kakao@naver.com",
+        }
+
+        await self.user_service.create_social_user(
+            name="홍길동",
+            email="test_kakao@naver.com",
+            social_id="kkkkk",
+            social_login_type="kakao",
+        )
+
+        # When
+        async with AsyncClient(app=app, base_url="http://test") as ac:
+            response = await ac.get(
+                url="/api/v1/auth/find-id",
+                headers={"Accept": "application/json"},
+                params=request_data,
+            )
+
+        response_data = response.json()
+
+        # Then
+        assert response.status_code == 200
+        assert response_data["login_id"] == "test_kakao@naver.com"
+        assert response_data["login_type"] == ["kakao"]
+
+    async def test_사용자_아이디_조회_성공_소셜유저_네이버(self) -> None:
+        # Given
+        request_data = {
+            "name": "홍길동",
+            "email": "test_naver@naver.com",
+        }
+
+        await self.user_service.create_social_user(
+            name="홍길동",
+            email="test_naver@naver.com",
+            social_id="kkkkk",
+            social_login_type="naver",
+        )
+
+        # When
+        async with AsyncClient(app=app, base_url="http://test") as ac:
+            response = await ac.get(
+                url="/api/v1/auth/find-id",
+                headers={"Accept": "application/json"},
+                params=request_data,
+            )
+
+        response_data = response.json()
+
+        # Then
+        assert response.status_code == 200
+        assert response_data["login_id"] == "test_naver@naver.com"
+        assert response_data["login_type"] == ["naver"]
+
+    @patch("app.user.services.auth_service.AuthenticateService._get_kakao_access_token")
+    @patch("app.user.services.auth_service.AuthenticateService._get_kakao_user_info")
+    async def test_사용자_아이디_조회_성공_병합유저(
+        self,
+        mock_get_kakao_user_info: AsyncMock,
+        mock_get_kakao_access_token: AsyncMock,
+    ) -> None:
+        # Given
+        request_data = {
+            "name": "홍길동",
+            "email": "hong@example.com",
+        }
+
+        mock_get_kakao_access_token.return_value = "fake_access_token"
+        mock_get_kakao_user_info.return_value = {
+            "id": "hhhhh",
+            "kakao_account": {"email": "hong@example.com"},
+            "properties": {"nickname": "홍길동"},
+        }
+
+        async with AsyncClient(app=app, base_url="http://test") as ac:
+            await ac.post(
+                url="/api/v1/oauth/kakao",
+                headers={
+                    "Accept": "application/json",
+                    "code": "fake_code",
+                },
+            )
+
+        # When
+        async with AsyncClient(app=app, base_url="http://test") as ac:
+            response = await ac.get(
+                url="/api/v1/auth/find-id",
+                headers={"Accept": "application/json"},
+                params=request_data,
+            )
+
+        response_data = response.json()
+
+        # Then
+        assert response.status_code == 200
+        assert response_data["login_id"] == "hong@example.com"
+        assert response_data["login_type"] == ["kakao", "email"]
 
     async def test_사용자_아이디_조회_실패_유저없음(self) -> None:
         # Given

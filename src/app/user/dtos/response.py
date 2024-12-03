@@ -14,14 +14,12 @@ class RefreshTokenRequest(BaseModel):
 
 
 class UserLoginInfoResponseDTO(BaseModel):
-    login_type: str  # 로그인 타입 (normal or social)
-    social_type: str  # 소셜 로그인 타입 (ex. naver, kakao, none)
+    login_type: list[str]  # 로그인 타입 (email, kakao, naver)
     login_id: str
 
     @classmethod
-    def build(cls, login_type: str, social_type: str, login_id: str) -> "UserLoginInfoResponseDTO":
+    def build(cls, login_type: list[str], login_id: str) -> "UserLoginInfoResponseDTO":
         return cls(
             login_type=login_type,
-            social_type=social_type,
             login_id=login_id,
         )
