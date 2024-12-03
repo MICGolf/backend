@@ -75,7 +75,8 @@ async def get_order_by_verification(
         raise HTTPException(status_code=400, detail="Invalid order number format")
 
         # 기존 get_order 로직 재사용
-    if not await OrderService.verify_order_owner(order_id, verification):
+    verify_result = await OrderService.verify_order_owner(order_id, verification)
+    if not verify_result.is_owner:
         raise HTTPException(status_code=403, detail="Invalid verification info")
 
     return await OrderService.get_order(order_id)
@@ -137,7 +138,7 @@ async def update_shipping_info(request: UpdateShippingRequest = Body(...)) -> Sh
 @router.get("/search", response_model=OrderSearchResponse, summary="주문 상세 검색")
 async def search_orders(
     params: OrderSearchRequest = Depends(),  # 여기서 OrderSearchRequest를 의존성으로 사용
-) -> list[OrderResponse]:
+) -> OrderSearchResponse:
     return await OrderService.advanced_search(params)
 
 

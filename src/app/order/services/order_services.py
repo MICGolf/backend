@@ -18,6 +18,7 @@ from app.order.dtos.order_response import (
     BatchUpdateStatusResponse,
     OrderProductResponse,
     OrderResponse,
+    OrderSearchResponse,
     OrderStatisticsResponse,
     ProductOptionResponse,
     ShippingStatusResponse,
@@ -382,18 +383,16 @@ class OrderService:
         return await OrderService.get_order(request.order_id)
 
     @staticmethod
-    async def advanced_search(request: OrderSearchRequest, page: int = 1, limit: int = 10) -> List[OrderResponse]:
+    async def advanced_search(request: OrderSearchRequest) -> OrderSearchResponse:
         query = NonUserOrder.all()
 
-        # 날짜 필터
+        # 기존 필터링 로직 유지
         if request.start_date and request.end_date:
             query = query.filter(created_at__gte=request.start_date, created_at__lte=request.end_date)
 
-        # 주문번호 검색
         if request.order_number:
             query = query.filter(id=int(request.order_number.replace("ORD-", "")))
 
-        # 상태 필터링
         if request.order_status:
             query = query.filter(order_product__current_status=request.order_status)
 
@@ -411,15 +410,26 @@ class OrderService:
             direction = "" if request.sort_direction == "asc" else "-"
             query = query.order_by(f"{direction}{request.sort_by}")
 
+        # 페이징 처리
         total = await query.count()
-        skip = (page - 1) * limit
-        orders = (
-            await query.offset(skip)
-            .limit(limit)
-            .prefetch_related("order_product__product", "order_product__product__option", "payment")
-        )
+        skip = (request.page - 1) * request.limit
+        orders = await query.offset(skip).limit(request.limit)
 
-        return [OrderResponse.model_validate(order, from_attributes=True) for order in orders]
+        # 각 주문에 대해 OrderResponse 생성
+        order_responses = []
+        for order in orders:
+            # get_order 메서드 재사용
+            order_response = await OrderService.get_order(order.pk)
+            order_responses.append(order_response)
+
+        return OrderSearchResponse(
+            orders=order_responses,
+            search_params=request,
+            total=total,
+            page=request.page,
+            limit=request.limit,
+            total_pages=(total + request.limit - 1) // request.limit,
+        )
 
     # @staticmethod
     # async def verify_admin(admin_key: str) -> bool:
