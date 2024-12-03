@@ -17,6 +17,7 @@ from common.utils.email_services import get_email_service
 from common.utils.email_services.email_service import EmailService
 from common.utils.sms_services import get_sms_service
 from common.utils.sms_services.sms_service import SmsService
+from core.configs import settings
 
 
 class UserService:
@@ -130,13 +131,17 @@ class UserService:
         if not user:
             raise UserNotFoundException()
 
-        login_type = "social" if user.social_login_type else "normal"
+        login_type = []
 
-        social_type = user.social_login_type if user.social_login_type else "none"
+        if user.social_login_type:
+            login_type.append(user.social_login_type)
 
-        login_id = "None" if user.social_login_type else user.login_id
+        if user.login_id != user.social_id:
+            login_type.append("email")
 
-        return UserLoginInfoResponseDTO.build(login_type=login_type, social_type=social_type, login_id=login_id)
+        login_id = user.email if user.social_login_type else user.login_id
+
+        return UserLoginInfoResponseDTO.build(login_type=login_type, login_id=login_id)
 
     @staticmethod
     async def get_user_by_name_and_login_id(name: str, login_id: str) -> User | None:
@@ -150,7 +155,10 @@ class UserService:
 
         token = await self.auth_service.generate_reset_token(user_id=user.id, user_name=user.name)
 
-        reset_link = f"{base_url}reset-password?token={token}"
+        if settings.ENV == "local":
+            reset_link = f"http://localhost:5173/auth/reset-password?token={token}"
+        else:
+            reset_link = f"{base_url}auth/reset-password?token={token}"
 
         message = EmailTemplates.RESET_PASSWORD.format(user_name=user.name, reset_link=reset_link)
 
