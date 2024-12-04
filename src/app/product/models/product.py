@@ -42,7 +42,7 @@ class Option(BaseModel):
     id = fields.IntField(pk=True)
     size = fields.CharField(max_length=255)
     color = fields.CharField(max_length=255)
-    color_code = fields.CharField(max_length=255, null=True)
+    color_code = fields.CharField(max_length=255)
     product: fields.ForeignKeyRelation["Product"] = fields.ForeignKeyField(
         "models.Product", related_name="options", on_delete=fields.CASCADE
     )
@@ -50,6 +50,7 @@ class Option(BaseModel):
 
     class Meta:
         table = "option"
+        unique_together = ("product", "color", "size", "color_code")
 
     @classmethod
     async def get_with_stock_and_images_by_product_id(cls, product_id: int) -> list["Option"]:
