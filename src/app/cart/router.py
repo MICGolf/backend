@@ -1,5 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from tortoise.exceptions import DoesNotExist
+from fastapi import APIRouter, Body, Depends, status
 
 from app.cart.dtos.cart_request import CartItemRequest
 from app.cart.dtos.cart_response import CartItemResponse, CartResponse
@@ -14,10 +13,7 @@ async def get_cart(user_id: int = Depends(AuthenticateService().get_user_id)) ->
     """
     유저의 장바구니를 조회합니다.
     """
-    try:
-        return await CartService.get_cart(user_id)
-    except DoesNotExist:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cart does not exist")
+    return await CartService.get_cart(user_id)
 
 
 @router.post("/", response_model=CartItemResponse, summary="장바구니에 상품 추가")
@@ -31,8 +27,7 @@ async def add_to_cart(
     return await CartService.add_to_cart(
         user_id=user_id,
         product_id=cart_item.product_id,
-        color=cart_item.color,
-        size=cart_item.size,
+        option_id=cart_item.option_id,
         product_count=cart_item.product_count,
     )
 
@@ -48,20 +43,22 @@ async def update_cart(
     return await CartService.update_cart(
         user_id=user_id,
         product_id=cart_item.product_id,
-        color=cart_item.color,
-        size=cart_item.size,
+        option_id=cart_item.option_id,
         product_count=cart_item.product_count,
     )
 
 
 @router.delete("/", status_code=status.HTTP_204_NO_CONTENT, summary="장바구니 상품 삭제")
 async def delete_cart(
-    cart_item: CartItemRequest,
+    product_id: int,
+    option_id: int,
     user_id: int = Depends(AuthenticateService().get_user_id),
 ) -> None:
     """
     장바구니에서 특정 상품을 삭제합니다.
     """
     await CartService.delete_cart(
-        user_id=user_id, product_id=cart_item.product_id, color=cart_item.color, size=cart_item.size
+        user_id=user_id,
+        product_id=product_id,
+        option_id=option_id,
     )
