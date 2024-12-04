@@ -18,11 +18,14 @@ class TestProductModels(TestCase):
             status="Y",
             product_code="TEST12345",
         )
+        # Option 1 생성
         self.option1 = await Option.create(size="M", color="Red", color_code="#FF0000", product=self.product)
-        self.option2 = await Option.create(size="L", color="Blue", color_code="#0000FF", product=self.product)
         await CountProduct.create(product=self.product, option=self.option1, count=10)
-        await CountProduct.create(product=self.product, option=self.option2, count=20)
         await OptionImage.create(image_url="http://example.com/image1.jpg", option=self.option1)
+
+        # Option 2 생성
+        self.option2 = await Option.create(size="L", color="Blue", color_code="#0000FF", product=self.product)
+        await CountProduct.create(product=self.product, option=self.option2, count=20)
         await OptionImage.create(image_url="http://example.com/image2.jpg", option=self.option2)
 
     async def test_get_by_id(self) -> None:
@@ -32,9 +35,19 @@ class TestProductModels(TestCase):
 
     async def test_get_with_stock_and_images_by_product_id(self) -> None:
         options = await Option.get_with_stock_and_images_by_product_id(self.product.id)
+
+        # 옵션의 개수 확인
         assert len(options) == 2
-        assert options[0].stock == 10  # type: ignore[attr-defined]
-        assert options[1].stock == 20  # type: ignore[attr-defined]
+
+        # option1에 대한 데이터 검증
+        option1 = next(opt for opt in options if opt.size == "M")
+        assert option1.stock == 10  # type: ignore[attr-defined]
+        assert option1.color == "Red"
+
+        # option2에 대한 데이터 검증
+        option2 = next(opt for opt in options if opt.size == "L")
+        assert option2.stock == 20  # type: ignore[attr-defined]
+        assert option2.color == "Blue"
 
     async def test_get_all_with_stock_and_images(self) -> None:
         options = await Option.get_all_with_stock_and_images()
@@ -45,8 +58,8 @@ class TestProductModels(TestCase):
     async def test_get_by_product_ids(self) -> None:
         options = await Option.get_by_product_ids([self.product.id])
         assert len(options) == 2
-        assert options[0].size == "M"
-        assert options[1].size == "L"
+        assert options[0].size == "L"
+        assert options[1].size == "M"
 
     async def test_option_images(self) -> None:
         images = await OptionImage.filter(option=self.option1).all()
