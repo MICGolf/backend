@@ -1,5 +1,6 @@
 from httpx import AsyncClient
 from tortoise.contrib.test import TestCase
+from tortoise.exceptions import IntegrityError
 
 from app.cart.models.cart import Cart
 from app.product.models.product import CountProduct, Option, Product
@@ -34,16 +35,8 @@ class TestCartModel(TestCase):
             cart_item_1 = await Cart.create(user=user, product=product, option=option, product_count=2)
             cart_item_2 = None
             duplicate_error = None
-            try:
+            with self.assertRaises(IntegrityError):
                 cart_item_2 = await Cart.create(user=user, product=product, option=option, product_count=3)
-            except Exception as e:
-                duplicate_error = str(e)
-
-            assert cart_item_1 is not None
-            assert cart_item_2 is None
-            assert duplicate_error is not None, "Duplicate error message is None"
-            assert "(1062" in duplicate_error.lower()
-            assert "duplicate entry" in duplicate_error.lower()
 
             # Then: 저장된 데이터 확인
             cart_items = await Cart.filter(user=user, product=product, option=option)
