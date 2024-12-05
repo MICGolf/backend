@@ -11,6 +11,7 @@ from app.order.dtos.order_request import (
     OrderSearchRequest,
     OrderVerificationRequest,
     PurchaseOrderRequest,
+    UpdateOrderRequest,
     UpdatePurchaseStatusRequest,
     UpdateShippingRequest,
 )
@@ -163,6 +164,24 @@ class OrderService:
             payment=None,
             shipping=shipping_status,
         )
+
+    # order_services.py에 추가
+    @staticmethod
+    async def update_order(order_id: int, request: UpdateOrderRequest) -> OrderResponse:
+        order = await NonUserOrder.get_or_none(id=order_id)
+        if not order:
+            raise HTTPException(status_code=404, detail="Order not found")
+
+        # 주문 정보 업데이트
+        order.name = request.name
+        order.phone = request.phone
+        order.shipping_address = request.shipping_address
+        order.detail_address = request.detail_address or ""  # None일 경우 빈 문자열
+        order.request = request.request or ""  # None일 경우 빈 문자열
+
+        await order.save()
+
+        return await OrderService.get_order(order.pk)
 
     @staticmethod
     async def verify_order_owner(order_id: int, verification: OrderVerificationRequest) -> VerifyOrderOwnerResponse:

@@ -11,6 +11,7 @@ from app.order.dtos.order_request import (
     OrderSearchRequest,
     OrderVerificationRequest,
     PurchaseOrderRequest,
+    UpdateOrderRequest,
     UpdateOrderStatusRequest,
     UpdatePurchaseStatusRequest,
     UpdateShippingRequest,
@@ -193,3 +194,12 @@ async def check_stock(
     quantity: int = Query(..., gt=0, description="확인할 수량"),
 ) -> StockCheckResponse:
     return await OrderService.check_and_update_stock(product_id, option_id, quantity)
+
+
+@router.put(
+    "/{order_id}",
+    response_model=OrderResponse,
+    summary="주문 정보 업데이트",
+)
+async def update_order(order_id: int, request: UpdateOrderRequest) -> OrderResponse:
+    return await OrderService.update_order(order_id, request)

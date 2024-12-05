@@ -107,7 +107,6 @@ class TestOrderRouter(TestCase):
             "tracking_number": "1234567890",
             "shipping_status": "SHIPPING",
         }
-
         # When
         async with AsyncClient(app=app, base_url="http://test") as ac:
             response = await ac.put(
@@ -123,13 +122,11 @@ class TestOrderRouter(TestCase):
     async def test_batch_update_status(self) -> None:
         # Given
         batch_data = {"order_ids": [self.test_order.pk], "status": "SHIPPING"}
-
         # When
         async with AsyncClient(app=app, base_url="http://test") as ac:
             response = await ac.put(
                 "/api/v1/order/batch-status", headers={"Accept": "application/json"}, json=batch_data
             )
-
         # Then
         assert response.status_code == 200
         data = response.json()
