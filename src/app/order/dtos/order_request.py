@@ -92,3 +92,12 @@ class UpdatePurchaseStatusRequest(BaseModel):
     order_id: int = Field(..., description="주문 ID")
     purchase_status: str = Field(..., description="발주 상태 (CONFIRMED/CANCELED)")
     memo: Optional[str] = None
+
+
+# order_request.py에 추가
+class UpdateOrderRequest(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255, description="주문자 이름")
+    phone: str = Field(..., min_length=10, max_length=20, description="연락처")
+    shipping_address: str = Field(..., min_length=1, max_length=255, description="배송지 주소")
+    detail_address: Optional[str] = Field(None, max_length=255, description="상세 주소")
+    request: Optional[str] = Field(None, description="배송 요청사항")
