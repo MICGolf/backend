@@ -36,7 +36,7 @@ class CartService:
                 option_id=item.option_id,  # type: ignore
                 product_code=item.product.product_code,
                 product_name=item.product.name,
-                product_image_url=item.option.images[0].image_url if item.option.images else "",
+                product_image_url=(item.option.images[0].image_url if item.option.images else ""),
                 product_color=item.option.color,
                 product_size=item.option.size,
                 product_amount=item.product_count,
@@ -96,7 +96,7 @@ class CartService:
                 option_id=user_cart.option_id,  # type: ignore
                 product_code=user_cart.product.product_code,
                 product_name=user_cart.product.name,
-                product_image_url=user_cart.option.images[0].image_url if user_cart.option.images else "",
+                product_image_url=(user_cart.option.images[0].image_url if user_cart.option.images else ""),
                 product_color=user_cart.option.color,
                 product_size=user_cart.option.size,
                 product_amount=user_cart.product_count,
@@ -109,7 +109,10 @@ class CartService:
 
         # 장바구니에 동일한 상품과 옵션이 없을 때 (새로운 상품 추가)
         new_cart = await Cart.create(
-            user_id=user_id, product_id=product_id, option_id=option.id, product_count=product_count
+            user_id=user_id,
+            product_id=product_id,
+            option_id=option.id,
+            product_count=product_count,
         )
         new_cart = await Cart.get(id=new_cart.id).prefetch_related("product", "option", "option__images")
         return CartItemResponse(
@@ -119,7 +122,7 @@ class CartService:
             option_id=new_cart.option_id,  # type: ignore
             product_code=new_cart.product.product_code,
             product_name=new_cart.product.name,
-            product_image_url=new_cart.option.images[0].image_url if new_cart.option.images else "",
+            product_image_url=(new_cart.option.images[0].image_url if new_cart.option.images else ""),
             product_color=new_cart.option.color,
             product_size=new_cart.option.size,
             product_amount=new_cart.product_count,
@@ -162,7 +165,7 @@ class CartService:
             option_id=user_cart.option_id,  # type: ignore
             product_code=user_cart.product.product_code,
             product_name=user_cart.product.name,
-            product_image_url=user_cart.option.images[0].image_url if user_cart.option.images else "",
+            product_image_url=(user_cart.option.images[0].image_url if user_cart.option.images else ""),
             product_color=user_cart.option.color,
             product_size=user_cart.option.size,
             product_amount=user_cart.product_count,

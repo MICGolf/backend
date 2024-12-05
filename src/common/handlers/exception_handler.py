@@ -28,7 +28,8 @@ def attach_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(HTTPException)
     async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
         logger.warning(
-            f"HTTPException: {exc.detail} | Path: {request.url.path} | Status: {exc.status_code}", exc_info=exc
+            f"HTTPException: {exc.detail} | Path: {request.url.path} | Status: {exc.status_code}",
+            exc_info=exc,
         )
         return JSONResponse(
             status_code=exc.status_code,

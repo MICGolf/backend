@@ -9,7 +9,9 @@ formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(messag
 
 
 def setup_logger(
-    name: str = "app_logger", settings: Optional[Settings] = None, enable_tortoise_logging: bool = False
+    name: str = "app_logger",
+    settings: Optional[Settings] = None,
+    enable_tortoise_logging: bool = False,
 ) -> logging.Logger:
     if not settings:
         raise ValueError("Settings 객체는 None일 수 없습니다.")

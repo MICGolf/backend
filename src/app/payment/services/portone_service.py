@@ -25,7 +25,10 @@ class PortoneService:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 response = await client.post(
                     f"{self.base_url}/users/getToken",
-                    json={"imp_key": self.config.PORTONE_API_KEY, "imp_secret": self.config.PORTONE_API_SECRET},
+                    json={
+                        "imp_key": self.config.PORTONE_API_KEY,
+                        "imp_secret": self.config.PORTONE_API_SECRET,
+                    },
                 )
                 result: PortoneResponse = response.json()
                 if result.get("code") == 0:

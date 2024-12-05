@@ -119,7 +119,11 @@ class PaymentService:
             await self.validator.validate_payment_status(payment.status, PaymentStatus.PAID)
 
             portone_response = await self.portone_service.approve_payment(
-                {"merchant_uid": payment.merchant_uid, "imp_uid": payment_data["imp_uid"], "amount": payment.amount}
+                {
+                    "merchant_uid": payment.merchant_uid,
+                    "imp_uid": payment_data["imp_uid"],
+                    "amount": payment.amount,
+                }
             )
 
             if portone_response:  # 응답 확인

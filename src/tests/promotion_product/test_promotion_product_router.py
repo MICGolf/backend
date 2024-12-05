@@ -25,7 +25,9 @@ class TestPromotionProductRouterWithExistingPromotion(TestCase):
             product_code="TEST12345",
         )
         self.promotion = await PromotionProduct.create(
-            product=self.product, promotion_type=PromotionType.MD_PICK.value, is_active=True
+            product=self.product,
+            promotion_type=PromotionType.MD_PICK.value,
+            is_active=True,
         )
         # Option과 OptionImage 생성
         self.option = await Option.create(
@@ -121,7 +123,10 @@ class TestPromotionProductRouterWithExistingPromotion(TestCase):
                 method="DELETE",
                 url=url,
                 content=json.dumps(body),  # Request Body를 content로 전달
-                headers={"Content-Type": "application/json", "Accept": "application/json"},
+                headers={
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                },
             )
 
         # Then
@@ -162,7 +167,10 @@ class TestPromotionProductRouterWithExistingPromotion(TestCase):
                 method="DELETE",
                 url=url,
                 content=json.dumps(body),  # Request Body를 content로 전달
-                headers={"Content-Type": "application/json", "Accept": "application/json"},
+                headers={
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                },
             )
         data = response.json()
 

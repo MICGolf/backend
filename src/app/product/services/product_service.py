@@ -135,7 +135,8 @@ class ProductService:
         ]
 
         await asyncio.gather(
-            CategoryProduct.create(category=category, product=product), Option.bulk_create(options_to_create)
+            CategoryProduct.create(category=category, product=product),
+            Option.bulk_create(options_to_create),
         )
 
         created_options = await Option.filter(product=product).all()
@@ -154,7 +155,8 @@ class ProductService:
         option_image_entries = await cls._process_images(created_options, image_mapping, files)
 
         await asyncio.gather(
-            CountProduct.bulk_create(count_products_to_create), OptionImage.bulk_create(option_image_entries)
+            CountProduct.bulk_create(count_products_to_create),
+            OptionImage.bulk_create(option_image_entries),
         )
 
     @classmethod

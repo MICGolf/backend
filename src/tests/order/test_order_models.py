@@ -12,7 +12,10 @@ class TestOrderModels(TestCase):
         await super().asyncSetUp()
         # 테스트용 상품 생성
         self.test_product = await Product.create(
-            name="Test Product", price=Decimal("85000"), origin_price=Decimal("100000"), product_code="TEST001"
+            name="Test Product",
+            price=Decimal("85000"),
+            origin_price=Decimal("100000"),
+            product_code="TEST001",
         )
 
         # 테스트용 옵션 생성

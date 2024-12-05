@@ -112,7 +112,9 @@ async def get_order_by_verification(
     description="주문의 상태를 업데이트합니다. (관리자 전용)",
     response_model=UpdateOrderStatusRequest,
 )
-async def update_order_status(request: UpdateOrderStatusRequest = Body(...)) -> UpdateOrderStatusResponse:
+async def update_order_status(
+    request: UpdateOrderStatusRequest = Body(...),
+) -> UpdateOrderStatusResponse:
     return await OrderService.update_order_status(request.order_id, request.status)
 
     # @router.get(
@@ -131,7 +133,9 @@ async def update_order_status(request: UpdateOrderStatusRequest = Body(...)) -> 
 
 
 @router.put("/shipping", response_model=ShippingStatusResponse, summary="배송 정보 업데이트")
-async def update_shipping_info(request: UpdateShippingRequest = Body(...)) -> ShippingStatusResponse:
+async def update_shipping_info(
+    request: UpdateShippingRequest = Body(...),
+) -> ShippingStatusResponse:
     return await OrderService.update_shipping_info(request)
 
 
@@ -142,8 +146,14 @@ async def search_orders(
     return await OrderService.advanced_search(params)
 
 
-@router.put("/batch-status", response_model=BatchUpdateStatusResponse, summary="주문 상태 일괄 변경")
-async def batch_update_status(request: BatchOrderStatusRequest) -> BatchUpdateStatusResponse:
+@router.put(
+    "/batch-status",
+    response_model=BatchUpdateStatusResponse,
+    summary="주문 상태 일괄 변경",
+)
+async def batch_update_status(
+    request: BatchOrderStatusRequest,
+) -> BatchUpdateStatusResponse:
     return await OrderService.batch_update_status(request)
 
 
@@ -177,7 +187,9 @@ async def handle_order_claim(request: OrderClaimRequest = Body(...)) -> OrderRes
 
 
 @router.put("/purchase-status", response_model=OrderResponse, summary="발주 상태 업데이트")
-async def update_purchase_status(request: UpdatePurchaseStatusRequest = Body(...)) -> OrderResponse:
+async def update_purchase_status(
+    request: UpdatePurchaseStatusRequest = Body(...),
+) -> OrderResponse:
     return await OrderService.update_purchase_status(request)
 
 

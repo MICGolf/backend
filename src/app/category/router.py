@@ -47,6 +47,13 @@ async def get_category_ancestors(category_id: int = Path(...)) -> dict[str, Any]
     return await CategoryService.get_category_with_ancestors(category_id)
 
 
-@router.post("/tree", response_model=List[CategoryTreeResponse], status_code=201, summary="카테고리 트리 생성")
-async def create_category_tree(request: CategoryCreateTreeRequest) -> List[CategoryTreeResponse]:
+@router.post(
+    "/tree",
+    response_model=List[CategoryTreeResponse],
+    status_code=201,
+    summary="카테고리 트리 생성",
+)
+async def create_category_tree(
+    request: CategoryCreateTreeRequest,
+) -> List[CategoryTreeResponse]:
     return await CategoryService.create_category_tree(request)

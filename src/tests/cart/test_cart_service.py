@@ -108,7 +108,10 @@ class TestCartService(TestCase):
     async def test_add_to_cart_user_cart_already_exists(self) -> None:
         # Given
         cart = await Cart.create(
-            user_id=self.user.id, product_id=self.product.id, option_id=self.option.id, product_count=2
+            user_id=self.user.id,
+            product_id=self.product.id,
+            option_id=self.option.id,
+            product_count=2,
         )
 
         # When
@@ -126,7 +129,12 @@ class TestCartService(TestCase):
 
     async def test_add_to_cart_user_cart_exceed_stock(self) -> None:
         # Given
-        await Cart.create(user_id=self.user.id, product_id=self.product.id, option_id=self.option.id, product_count=48)
+        await Cart.create(
+            user_id=self.user.id,
+            product_id=self.product.id,
+            option_id=self.option.id,
+            product_count=48,
+        )
 
         # When & Then
         try:

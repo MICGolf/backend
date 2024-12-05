@@ -83,7 +83,9 @@ class OrderService:
 
             # 재고 차감
             stock_check = await OrderService.check_and_update_stock(
-                product_id=product_item.product_id, option_id=product_item.option_id, quantity=product_item.quantity
+                product_id=product_item.product_id,
+                option_id=product_item.option_id,
+                quantity=product_item.quantity,
             )
 
             total_amount += product_item.price * product_item.quantity
@@ -114,7 +116,9 @@ class OrderService:
     @staticmethod
     async def get_order(order_id: int) -> OrderResponse:
         order = await NonUserOrder.get_or_none(id=order_id).prefetch_related(
-            "order_product__product", "order_product__product__options", "payment"  # 상품의 옵션 정보도 함께 로드
+            "order_product__product",
+            "order_product__product__options",
+            "payment",  # 상품의 옵션 정보도 함께 로드
         )
         if not order:
             raise HTTPException(status_code=404, detail="Order not found")
@@ -132,7 +136,10 @@ class OrderService:
                     price=p.price,
                     option=(
                         ProductOptionResponse(
-                            size=option.size, color=option.color, color_code=option.color_code, price=p.product.price
+                            size=option.size,
+                            color=option.color,
+                            color_code=option.color_code,
+                            price=p.product.price,
                         )
                         if option
                         else None
@@ -144,7 +151,10 @@ class OrderService:
                 )
             )
         shipping_status = ShippingStatusResponse(
-            status="PENDING", courier="", tracking_number="", updated_at=order.updated_at
+            status="PENDING",
+            courier="",
+            tracking_number="",
+            updated_at=order.updated_at,
         )
 
         return OrderResponse(
@@ -229,7 +239,9 @@ class OrderService:
         return await OrderService.get_order(order.pk)
 
     @staticmethod
-    async def update_shipping_info(request: UpdateShippingRequest) -> ShippingStatusResponse:
+    async def update_shipping_info(
+        request: UpdateShippingRequest,
+    ) -> ShippingStatusResponse:
         order_product = await NonUserOrderProduct.get_or_none(order_id=request.order_id)
         if not order_product:
             raise HTTPException(status_code=404, detail="Order not found")
@@ -253,7 +265,10 @@ class OrderService:
         query = NonUserOrder.all()
 
         if search_params.start_date and search_params.end_date:
-            query = query.filter(created_at__gte=search_params.start_date, created_at__lte=search_params.end_date)
+            query = query.filter(
+                created_at__gte=search_params.start_date,
+                created_at__lte=search_params.end_date,
+            )
 
         if search_params.order_number:
             query = query.filter(id=int(search_params.order_number.replace("ORD-", "")))
@@ -270,7 +285,9 @@ class OrderService:
         return [OrderResponse.model_validate(order, from_attributes=True) for order in orders]
 
     @staticmethod
-    async def batch_update_status(request: BatchOrderStatusRequest) -> BatchUpdateStatusResponse:  # 반환 타입 수정
+    async def batch_update_status(
+        request: BatchOrderStatusRequest,
+    ) -> BatchUpdateStatusResponse:  # 반환 타입 수정
         await NonUserOrderProduct.filter(order_id__in=request.order_ids).update(current_status=request.status)
         return BatchUpdateStatusResponse(  # 직접 객체 생성하여 반환
             updated_count=len(request.order_ids), status=request.status
@@ -314,7 +331,9 @@ class OrderService:
         )
 
     @staticmethod
-    async def update_purchase_order(request: PurchaseOrderRequest) -> tuple[OrderResponse, StockCheckResponse]:
+    async def update_purchase_order(
+        request: PurchaseOrderRequest,
+    ) -> tuple[OrderResponse, StockCheckResponse]:
         order_product = await NonUserOrderProduct.get_or_none(order_id=request.order_id).prefetch_related(
             "product", "product__options"
         )
@@ -372,7 +391,9 @@ class OrderService:
         return await OrderService.get_order(request.order_id)
 
     @staticmethod
-    async def update_purchase_status(request: UpdatePurchaseStatusRequest) -> OrderResponse:
+    async def update_purchase_status(
+        request: UpdatePurchaseStatusRequest,
+    ) -> OrderResponse:
         order_product = await NonUserOrderProduct.get_or_none(order_id=request.order_id)
         if not order_product:
             raise HTTPException(status_code=404, detail="Order not found")

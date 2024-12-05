@@ -48,7 +48,8 @@ class CategoryService:
             # 최대 depth 제한 추가
             if parent.depth >= 3:  # 예: 최대 3단계까지만 허용
                 raise HTTPException(
-                    status_code=400, detail="카테고리는 최대 대분류, 중분류, 소분류까지로 나눌 수 있습니다."
+                    status_code=400,
+                    detail="카테고리는 최대 대분류, 중분류, 소분류까지로 나눌 수 있습니다.",
                 )
             depth = parent.depth + 1
 
@@ -70,7 +71,10 @@ class CategoryService:
         if request.name:
             exists = await Category.filter(name=request.name, parent_id=request.parent_id, id__not=category_id).exists()
             if exists:
-                raise HTTPException(status_code=400, detail="부모 카테고리 내에 중복되는 이름이 존재합니다.")
+                raise HTTPException(
+                    status_code=400,
+                    detail="부모 카테고리 내에 중복되는 이름이 존재합니다.",
+                )
 
         if "parent_id" in update_data:
             if update_data["parent_id"]:
@@ -107,7 +111,10 @@ class CategoryService:
         # 연결된 상품이 있는지 확인
         for cat in categories_with_products:
             if cat["product_count"] > 0:
-                raise HTTPException(status_code=400, detail=f"Category {cat['name']} has linked products")
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Category {cat['name']} has linked products",
+                )
 
         # 모든 연관 카테고리 삭제
         await category.delete()
@@ -132,10 +139,15 @@ class CategoryService:
         # 대분류부터 순서대로 정렬
         ancestors.reverse()
 
-        return {"category": CategoryResponse.model_validate(category, from_attributes=True), "ancestors": ancestors}
+        return {
+            "category": CategoryResponse.model_validate(category, from_attributes=True),
+            "ancestors": ancestors,
+        }
 
     @staticmethod
-    async def create_category_tree(request: CategoryCreateTreeRequest) -> List[CategoryTreeResponse]:
+    async def create_category_tree(
+        request: CategoryCreateTreeRequest,
+    ) -> List[CategoryTreeResponse]:
         async def create_tree(
             data: Union[CategoryCreateTreeRequest, CategoryChildRequest],
             parent_id: Optional[int] = None,

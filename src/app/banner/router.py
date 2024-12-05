@@ -156,7 +156,11 @@ async def toggle_banner_status(banner_id: int = Path(..., description="토글할
     return await BannerService.toggle_banner_status(banner_id)
 
 
-@router.delete("/{banner_id}", status_code=204, description="배너를 삭제합니다. 이미지 파일도 함께 삭제됩니다.")
+@router.delete(
+    "/{banner_id}",
+    status_code=204,
+    description="배너를 삭제합니다. 이미지 파일도 함께 삭제됩니다.",
+)
 async def delete_banner(banner_id: int = Path(..., description="삭제할 배너의 ID")) -> None:
     """
     배너 삭제 엔드포인트

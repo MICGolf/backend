@@ -51,7 +51,10 @@ class TestCartRouter(TestCase):
             count=50,
         )
 
-    @patch("app.user.services.auth_service.AuthenticateService.get_user_id", new_callable=AsyncMock)
+    @patch(
+        "app.user.services.auth_service.AuthenticateService.get_user_id",
+        new_callable=AsyncMock,
+    )
     async def test_get_list(self, mock_get_user_id: AsyncMock) -> None:
         """
         GWT 기반: 장바구니 조회 테스트
@@ -72,7 +75,10 @@ class TestCartRouter(TestCase):
         async with AsyncClient(app=app, base_url="http://test") as ac:
             response = await ac.get(
                 url="/api/v1/cart/",
-                headers={"Accept": "application/json", "Authorization": f"Bearer {mock_token}"},
+                headers={
+                    "Accept": "application/json",
+                    "Authorization": f"Bearer {mock_token}",
+                },
             )
 
         # Then: 응답 코드와 데이터 검증
@@ -84,7 +90,10 @@ class TestCartRouter(TestCase):
         assert response_data["items"][0]["product_name"] == "Test Product"
         assert response_data["items"][0]["product_amount"] == 2
 
-    @patch("app.user.services.auth_service.AuthenticateService.get_user_id", new_callable=AsyncMock)
+    @patch(
+        "app.user.services.auth_service.AuthenticateService.get_user_id",
+        new_callable=AsyncMock,
+    )
     async def test_add_to_cart(self, mock_get_user_id: AsyncMock) -> None:
         """
         GWT 기반: 장바구니에 상품 추가 테스트
@@ -103,7 +112,10 @@ class TestCartRouter(TestCase):
             response = await ac.post(
                 url="/api/v1/cart/",
                 json=cart_item,
-                headers={"Accept": "application/json", "Authorization": f"Bearer {mock_token}"},
+                headers={
+                    "Accept": "application/json",
+                    "Authorization": f"Bearer {mock_token}",
+                },
             )
 
         # Then
@@ -113,7 +125,10 @@ class TestCartRouter(TestCase):
         assert response_data["option_id"] == self.option.id
         assert response_data["product_amount"] == 2
 
-    @patch("app.user.services.auth_service.AuthenticateService.get_user_id", new_callable=AsyncMock)
+    @patch(
+        "app.user.services.auth_service.AuthenticateService.get_user_id",
+        new_callable=AsyncMock,
+    )
     async def test_update_cart(self, mock_get_user_id: AsyncMock) -> None:
         """
         GWT 기반: 장바구니 상품 수량 수정 테스트
@@ -138,7 +153,10 @@ class TestCartRouter(TestCase):
             response = await ac.patch(
                 url="/api/v1/cart/",
                 json=updated_item,
-                headers={"Accept": "application/json", "Authorization": f"Bearer {mock_token}"},
+                headers={
+                    "Accept": "application/json",
+                    "Authorization": f"Bearer {mock_token}",
+                },
             )
 
         # Then
@@ -146,7 +164,10 @@ class TestCartRouter(TestCase):
         response_data = response.json()
         assert response_data["product_amount"] == 5
 
-    @patch("app.user.services.auth_service.AuthenticateService.get_user_id", new_callable=AsyncMock)
+    @patch(
+        "app.user.services.auth_service.AuthenticateService.get_user_id",
+        new_callable=AsyncMock,
+    )
     async def test_delete_cart(self, mock_get_user_id: AsyncMock) -> None:
         """
         GWT 기반: 장바구니 상품 삭제 테스트
@@ -165,7 +186,10 @@ class TestCartRouter(TestCase):
         async with AsyncClient(app=app, base_url="http://test") as ac:
             response = await ac.delete(
                 url=f"/api/v1/cart/?product_id={self.product.id}&option_id={self.option.id}",
-                headers={"Accept": "application/json", "Authorization": f"Bearer {mock_token}"},
+                headers={
+                    "Accept": "application/json",
+                    "Authorization": f"Bearer {mock_token}",
+                },
             )
 
         # Then

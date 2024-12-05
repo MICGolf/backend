@@ -1,3 +1,4 @@
+import string
 from typing import Literal, Optional
 
 from pydantic import BaseModel, EmailStr, Field, model_validator
@@ -28,10 +29,10 @@ class UserCreateRequestDTO(BaseModel):
         if password is None:
             return False
         return (
-            len(password) >= 8
-            and any(c.isdigit() for c in password)
-            and any(c.islower() for c in password)
-            and any(c.isupper() for c in password)
+            len(password) >= 8  # 최소 8자 이상
+            and any(c.isdigit() for c in password)  # 숫자 포함
+            and any(c.isupper() for c in password)  # 대문자 포함
+            and any(c in string.punctuation for c in password)  # 특수문자 포함
         )
 
 
@@ -71,8 +72,8 @@ class ResetPasswordRequest(BaseModel):
         if password is None:
             return False
         return (
-            len(password) >= 8
-            and any(c.isdigit() for c in password)
-            and any(c.islower() for c in password)
-            and any(c.isupper() for c in password)
+            len(password) >= 8  # 최소 8자 이상
+            and any(c.isdigit() for c in password)  # 숫자 포함
+            and any(c.isupper() for c in password)  # 대문자 포함
+            and any(c in string.punctuation for c in password)  # 특수문자 포함
         )

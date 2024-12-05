@@ -291,7 +291,9 @@ security = HTTPBearer(auto_error=False)
 
 
 # 헬퍼 함수 - 토큰만 뽑아오는 함수
-def get_token_from_header(credentials: HTTPAuthorizationCredentials = Depends(security)) -> str:
+def get_token_from_header(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+) -> str:
     if credentials is None:
         raise JWTAccessNotProvidedException()
     return credentials.credentials

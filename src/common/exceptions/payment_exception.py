@@ -7,7 +7,10 @@ class PaymentException(HTTPException):
     """기본 결제 예외 클래스"""
 
     def __init__(
-        self, status_code: int = 400, detail: Optional[str] = None, headers: Optional[Dict[str, Any]] = None
+        self,
+        status_code: int = 400,
+        detail: Optional[str] = None,
+        headers: Optional[Dict[str, Any]] = None,
     ) -> None:
         super().__init__(status_code=status_code, detail=detail, headers=headers)
 

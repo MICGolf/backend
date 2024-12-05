@@ -16,7 +16,11 @@ class ErrorCode(Enum):
     NAVER_ACCESS_TOKEN_INVALID = (2006, "Naver access token is missing or invalid", 400)
 
     # 파일 관련 에러 (3000 ~ 3999)
-    MAX_IMAGES_EXCEEDED = (3001, "Maximum number of images for this color exceeded", 400)
+    MAX_IMAGES_EXCEEDED = (
+        3001,
+        "Maximum number of images for this color exceeded",
+        400,
+    )
     MAX_IMAGE_SIZE_EXCEEDED = (3002, "Maximum image size for this color exceeded", 400)
 
     # 토큰 관련 에러 (4000 ~ 4999)
