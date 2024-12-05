@@ -2,10 +2,12 @@ from typing import Awaitable, Callable, Optional
 
 from fastapi import FastAPI, HTTPException, Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import JSONResponse
 
 from app.user.dtos.auth_dto import JwtPayloadTypedDict
 from app.user.services.auth_service import AuthenticateService
 from common.exceptions.custom_exceptions import AccessTokenExpiredException
+from common.exceptions.error_code import ErrorCode
 
 
 class AccessTokenMiddleware(BaseHTTPMiddleware):
@@ -24,7 +26,14 @@ class AccessTokenMiddleware(BaseHTTPMiddleware):
         payload: JwtPayloadTypedDict = self.auth_service._decode_token(token)
 
         if not self.auth_service.is_valid_access_token(payload):
-            raise AccessTokenExpiredException()
+            return JSONResponse(
+                status_code=401,
+                content={
+                    "code": 401,
+                    "data": None,
+                    "message": str(ErrorCode.ACCESS_TOKEN_EXPIRED.value[1]),
+                },
+            )
 
         request.state.user = {
             "user_id": payload["user_id"],
