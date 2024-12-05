@@ -107,14 +107,12 @@ class TestOrderRouter(TestCase):
             "tracking_number": "1234567890",
             "shipping_status": "SHIPPING",
         }
-        print(f"Request data: {shipping_data}")
         # When
         async with AsyncClient(app=app, base_url="http://test") as ac:
             response = await ac.put(
                 "/api/v1/order/shipping", headers={"Accept": "application/json"}, json=shipping_data
             )
-        print(f"Response status: {response.status_code}")  # 응답 상태 코드
-        print(f"Response body: {response.json()}")
+
         # Then
         assert response.status_code == 200
         data = response.json()
