@@ -94,7 +94,12 @@ async def reset_password_request_handler(
     background_tasks: BackgroundTasks,
     user_service: UserService = Depends(),
 ) -> dict[str, str]:
-    background_tasks.add_task(user_service.send_password_reset_mail, body.name, body.login_id, str(request.base_url))
+    background_tasks.add_task(
+        user_service.send_password_reset_mail,
+        body.name,
+        body.login_id,
+        str(request.base_url),
+    )
     return {"message": "Password reset email sent."}
 
 
@@ -132,5 +137,7 @@ async def refresh_token(
     summary="토큰 정보 추출 테스트 API",
     description="토큰 정보 추출 테스트 API",
 )
-async def protected_route(user_id: int = Depends(AuthenticateService().get_user_id)) -> dict[str, Any]:
+async def protected_route(
+    user_id: int = Depends(AuthenticateService().get_user_id),
+) -> dict[str, Any]:
     return {"message": "Access granted", "user_id": user_id}

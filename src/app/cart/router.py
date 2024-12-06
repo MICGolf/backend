@@ -9,7 +9,9 @@ router = APIRouter(prefix="/cart", tags=["Cart"])
 
 
 @router.get("/", response_model=CartResponse, summary="장바구니 조회")
-async def get_cart(user_id: int = Depends(AuthenticateService().get_user_id)) -> CartResponse:
+async def get_cart(
+    user_id: int = Depends(AuthenticateService().get_user_id),
+) -> CartResponse:
     """
     유저의 장바구니를 조회합니다.
     """

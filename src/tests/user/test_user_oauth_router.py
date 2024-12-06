@@ -246,10 +246,14 @@ class TestUserService(TestCase):
         assert response.status_code == 400
         assert response.json()["code"] == 2004
 
+    @patch("app.user.services.auth_service.AuthenticateService._request_token")
     @patch("app.user.services.auth_service.AuthenticateService._is_valid_token_format")
-    async def test_social_네이버_토큰_유효성_실패(self, mock_is_valid_token_format: AsyncMock) -> None:
+    async def test_social_네이버_토큰_유효성_실패(
+        self, mock_is_valid_token_format: AsyncMock, mock_request_token: AsyncMock
+    ) -> None:
         # Given
         mock_is_valid_token_format.return_value = False
+        mock_request_token.return_value = httpx.Response(status_code=200, json={"access_token": "asd"})
 
         # When
         async with AsyncClient(app=app, base_url="http://test") as ac:

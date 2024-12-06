@@ -24,7 +24,9 @@ class BannerService:
 
     @classmethod
     async def get_banners(
-        cls, query_type: str | None = None, pagination: PaginationAndSortingDTO | None = None
+        cls,
+        query_type: str | None = None,
+        pagination: PaginationAndSortingDTO | None = None,
     ) -> BannerListResponse:
         """배너 목록을 조회하고 페이지네이션 처리"""
         query = Banner.all()
@@ -48,7 +50,10 @@ class BannerService:
 
         if pagination:
             if pagination.sort not in cls.ALLOWED_SORT_FIELDS:
-                raise HTTPException(status_code=400, detail=f"정렬은 {', '.join(cls.ALLOWED_SORT_FIELDS)}만 가능합니다")
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"정렬은 {', '.join(cls.ALLOWED_SORT_FIELDS)}만 가능합니다",
+                )
 
             order_prefix = "-" if pagination.order == "desc" else ""
             sort_field = f"{order_prefix}{pagination.sort}"
@@ -118,7 +123,9 @@ class BannerService:
 
             s3_client = get_object_storage_client()
             uploaded_url = await s3_client.upload_file_obj(
-                bucket_name=settings.AWS_STORAGE_BUCKET_NAME, file_obj=buffer, object_name=f"banners/{filename}"
+                bucket_name=settings.AWS_STORAGE_BUCKET_NAME,
+                file_obj=buffer,
+                object_name=f"banners/{filename}",
             )
 
             if not uploaded_url:
@@ -162,7 +169,10 @@ class BannerService:
     @classmethod
     @atomic()
     async def update_banner(
-        cls, banner_id: int, request: BannerUpdateRequest, image: Optional[UploadFile] = None
+        cls,
+        banner_id: int,
+        request: BannerUpdateRequest,
+        image: Optional[UploadFile] = None,
     ) -> BannerResponse:
         """기존 배너 정보를 수정하고 이미지 업데이트"""
         banner = await Banner.get_or_none(id=banner_id)
@@ -179,9 +189,10 @@ class BannerService:
         if (request.category_type and request.category_type != banner.category_type) or (
             request.display_order is not None and request.display_order != banner.display_order
         ):
-            await Banner.filter(category_type=banner.category_type, display_order__gt=banner.display_order).update(
-                display_order=F("display_order") - 1
-            )
+            await Banner.filter(
+                category_type=banner.category_type,
+                display_order__gt=banner.display_order,
+            ).update(display_order=F("display_order") - 1)
 
             target_category = request.category_type or banner.category_type
             update_data["display_order"] = await cls._validate_and_adjust_display_order(

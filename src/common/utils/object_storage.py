@@ -85,7 +85,9 @@ class ObjectStorageClient:
 
                 if response.get("IsTruncated"):
                     response = self.s3_client.list_objects(
-                        Bucket=bucket_name, MaxKeys=max_keys, Marker=response.get("NextMarker")
+                        Bucket=bucket_name,
+                        MaxKeys=max_keys,
+                        Marker=response.get("NextMarker"),
                     )
                 else:
                     break
@@ -113,7 +115,10 @@ class ObjectStorageClient:
 
                 if response.get("IsTruncated"):
                     response = self.s3_client.list_objects(
-                        Bucket=bucket_name, Delimiter=delimiter, MaxKeys=max_keys, Marker=response.get("NextMarker")
+                        Bucket=bucket_name,
+                        Delimiter=delimiter,
+                        MaxKeys=max_keys,
+                        Marker=response.get("NextMarker"),
                     )
                 else:
                     break

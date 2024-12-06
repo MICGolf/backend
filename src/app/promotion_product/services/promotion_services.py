@@ -51,14 +51,19 @@ class PromotionProductService:
         )
 
     @staticmethod
-    async def add_promotion_products(request: AddPromotionRequest) -> PromotionProductResponse:
+    async def add_promotion_products(
+        request: AddPromotionRequest,
+    ) -> PromotionProductResponse:
         product = (
             await Product.filter(product_code=request.product_code)
             .prefetch_related("options", "options__images")
             .first()
         )
         if not product:
-            raise HTTPException(status_code=404, detail=f"Product with code '{request.product_code}' does not exist.")
+            raise HTTPException(
+                status_code=404,
+                detail=f"Product with code '{request.product_code}' does not exist.",
+            )
         product_id = product.id
         existing_promotion = await PromotionProduct.filter(
             product_id=product_id, promotion_type=request.promotion_type
@@ -92,16 +97,23 @@ class PromotionProductService:
         )
 
     @staticmethod
-    async def update_promotion_products(request: UpdatePromotionRequest) -> PromotionProductResponse:
+    async def update_promotion_products(
+        request: UpdatePromotionRequest,
+    ) -> PromotionProductResponse:
         product = (
             await Product.filter(product_code=request.product_code)
             .prefetch_related("options", "options__images")
             .first()
         )
         if not product:
-            raise HTTPException(status_code=404, detail=f"{request.product_code}는 존재하지 않는 상품코드 입니다.")
+            raise HTTPException(
+                status_code=404,
+                detail=f"{request.product_code}는 존재하지 않는 상품코드 입니다.",
+            )
         promotion = await PromotionProduct.filter(
-            product_id=product.id, promotion_type=request.promotion_type, is_active=request.is_active
+            product_id=product.id,
+            promotion_type=request.promotion_type,
+            is_active=request.is_active,
         ).first()
 
         if not promotion:
@@ -139,7 +151,10 @@ class PromotionProductService:
     async def delete_promotion_products(request: DeletePromotionRequest) -> None:
         product = await Product.filter(product_code=request.product_code).first()
         if not product:
-            raise HTTPException(status_code=404, detail=f"Product with code '{request.product_code}' does not exist.")
+            raise HTTPException(
+                status_code=404,
+                detail=f"Product with code '{request.product_code}' does not exist.",
+            )
         deleted_count = await PromotionProduct.filter(
             product_id=product.id, promotion_type=request.promotion_type
         ).delete()

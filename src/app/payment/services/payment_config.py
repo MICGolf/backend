@@ -25,13 +25,25 @@ class PaymentSettings(BaseSettings):
         "MIN_AMOUNT": 100,  # 최소 결제 금액
         "MAX_AMOUNT": 10000000,  # 최대 결제 금액
         "DEFAULT_PG": "nice",  # 기본 PG사
-        "ALLOWED_METHODS": ["card", "trans", "vbank", "phone", "kakaopay", "naverpay", "payco", "tosspay"],
+        "ALLOWED_METHODS": [
+            "card",
+            "trans",
+            "vbank",
+            "phone",
+            "kakaopay",
+            "naverpay",
+            "payco",
+            "tosspay",
+        ],
         "TOKEN_EXPIRE_MINUTES": 30,  # 토큰 만료 시간(분)
     }
 
     # 웹훅 설정
     WEBHOOK_SECRET: str
-    WEBHOOK_URLS: Dict[str, str] = {"payment": "/api/v1/payments/webhook", "billing": "/api/v1/billings/webhook"}
+    WEBHOOK_URLS: Dict[str, str] = {
+        "payment": "/api/v1/payments/webhook",
+        "billing": "/api/v1/billings/webhook",
+    }
 
     class Config:
         env_file = ".env"
@@ -41,8 +53,24 @@ class PaymentSettings(BaseSettings):
     def get_pg_config(self) -> Dict[str, Any]:
         """PG사 설정 반환"""
         return {
-            "nice": {"merchant_id": self.NICE_MERCHANT_ID, "enabled": True, "sandbox": self.SANDBOX},
-            "inicis": {"merchant_id": self.INICIS_MERCHANT_ID, "enabled": True, "sandbox": self.SANDBOX},
-            "tosspayments": {"merchant_id": self.TOSS_MERCHANT_ID, "enabled": True, "sandbox": self.SANDBOX},
-            "kakaopay": {"merchant_id": self.KAKAO_MERCHANT_ID, "enabled": True, "sandbox": self.SANDBOX},
+            "nice": {
+                "merchant_id": self.NICE_MERCHANT_ID,
+                "enabled": True,
+                "sandbox": self.SANDBOX,
+            },
+            "inicis": {
+                "merchant_id": self.INICIS_MERCHANT_ID,
+                "enabled": True,
+                "sandbox": self.SANDBOX,
+            },
+            "tosspayments": {
+                "merchant_id": self.TOSS_MERCHANT_ID,
+                "enabled": True,
+                "sandbox": self.SANDBOX,
+            },
+            "kakaopay": {
+                "merchant_id": self.KAKAO_MERCHANT_ID,
+                "enabled": True,
+                "sandbox": self.SANDBOX,
+            },
         }

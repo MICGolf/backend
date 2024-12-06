@@ -20,7 +20,10 @@ class TestOrderServices(TestCase):
         await super().asyncSetUp()
         # 테스트용 상품 생성
         self.test_product = await Product.create(
-            name="Test Product", price=Decimal("85000"), origin_price=Decimal("100000"), product_code="TEST001"
+            name="Test Product",
+            price=Decimal("85000"),
+            origin_price=Decimal("100000"),
+            product_code="TEST001",
         )
 
         # 테스트용 옵션 생성
@@ -28,7 +31,9 @@ class TestOrderServices(TestCase):
 
         # 테스트용 재고 생성
         self.test_stock = await CountProduct.create(
-            product=self.test_product, option=self.test_option, count=10  # 초기 재고 10개
+            product=self.test_product,
+            option=self.test_option,
+            count=10,  # 초기 재고 10개
         )
 
     async def test_create_order_service(self) -> None:
@@ -41,7 +46,10 @@ class TestOrderServices(TestCase):
             request="Test Request",
             products=[
                 OrderProductRequest(
-                    product_id=self.test_product.id, option_id=self.test_option.id, quantity=1, price=Decimal("85000")
+                    product_id=self.test_product.id,
+                    option_id=self.test_option.id,
+                    quantity=1,
+                    price=Decimal("85000"),
                 )
             ],
         )
@@ -90,7 +98,10 @@ class TestOrderServices(TestCase):
 
         # When
         shipping_request = UpdateShippingRequest(
-            order_id=order.pk, courier="Test Courier", tracking_number="1234567890", shipping_status="SHIPPING"
+            order_id=order.pk,
+            courier="Test Courier",
+            tracking_number="1234567890",
+            shipping_status="SHIPPING",
         )
         result = await OrderService.update_shipping_info(shipping_request)
 
@@ -119,7 +130,9 @@ class TestOrderServices(TestCase):
 
         # When
         result = await OrderService.check_and_update_stock(
-            product_id=self.test_product.id, option_id=self.test_option.id, quantity=requested_quantity
+            product_id=self.test_product.id,
+            option_id=self.test_option.id,
+            quantity=requested_quantity,
         )
 
         # Then

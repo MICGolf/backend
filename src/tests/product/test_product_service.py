@@ -228,7 +228,10 @@ class TestProductService(TestCase):
         assert len(response.options) == len(self.options_1)
 
         for response_option in response.options:
-            db_option = next((opt for opt in self.options_1 if opt.color == response_option.color), None)
+            db_option = next(
+                (opt for opt in self.options_1 if opt.color == response_option.color),
+                None,
+            )
             assert db_option is not None
             assert response_option.color_code == db_option.color_code
 
@@ -567,7 +570,10 @@ class TestProductService(TestCase):
             OptionDTO(
                 color="Red",
                 color_code="#FF0000",
-                sizes=[SizeOptionDTO(size="S", stock=10), SizeOptionDTO(size="M", stock=20)],
+                sizes=[
+                    SizeOptionDTO(size="S", stock=10),
+                    SizeOptionDTO(size="M", stock=20),
+                ],
             ),
         ]
         image_mapping = {"#FF0000": ["red_image1.jpg", "red_image2.jpg"]}
@@ -634,17 +640,26 @@ class TestProductService(TestCase):
             OptionDTO(
                 color="Red",
                 color_code="#FF0000",
-                sizes=[SizeOptionDTO(size="S", stock=10), SizeOptionDTO(size="M", stock=20)],
+                sizes=[
+                    SizeOptionDTO(size="S", stock=10),
+                    SizeOptionDTO(size="M", stock=20),
+                ],
             ),
             OptionDTO(
                 color="Blue",
                 color_code="#0000FF",
-                sizes=[SizeOptionDTO(size="L", stock=15), SizeOptionDTO(size="XL", stock=5)],
+                sizes=[
+                    SizeOptionDTO(size="L", stock=15),
+                    SizeOptionDTO(size="XL", stock=5),
+                ],
             ),
             OptionDTO(
                 color="Green",
                 color_code="#00FF00",
-                sizes=[SizeOptionDTO(size="M", stock=25), SizeOptionDTO(size="L", stock=10)],
+                sizes=[
+                    SizeOptionDTO(size="M", stock=25),
+                    SizeOptionDTO(size="L", stock=10),
+                ],
             ),
         ]
         image_mapping = {
@@ -869,7 +884,10 @@ class TestProductService(TestCase):
             self.create_mock_file("blue_image_1.jpg", "image/jpeg", b"mock blue image content"),
         ]
 
-        image_mapping = {"#FF0000": ["red_image_1.jpg"], "#0000FF": ["blue_image_1.jpg"]}
+        image_mapping = {
+            "#FF0000": ["red_image_1.jpg"],
+            "#0000FF": ["blue_image_1.jpg"],
+        }
 
         # _validate_images 메서드 호출
         await ProductService._validate_images(files, image_mapping)
@@ -882,7 +900,10 @@ class TestProductService(TestCase):
         with self.assertRaises(ValueError) as context:
             await ProductService._validate_images(files, image_mapping)
 
-        self.assertEqual(str(context.exception), "Invalid image type: image/gif. Only JPEG and PNG are allowed.")
+        self.assertEqual(
+            str(context.exception),
+            "Invalid image type: image/gif. Only JPEG and PNG are allowed.",
+        )
 
     async def test_이미지_7장_초과(self) -> None:
         files = [self.create_mock_file(f"red_image_{i}.jpg", "image/jpeg", b"mock red image content") for i in range(7)]
@@ -914,7 +935,10 @@ class TestProductService(TestCase):
         with self.assertRaises(ValueError) as context:
             await ProductService._validate_images(files, image_mapping)
 
-        self.assertEqual(str(context.exception), f"Image red_image_1.jpg does not have a valid color code mapping.")
+        self.assertEqual(
+            str(context.exception),
+            f"Image red_image_1.jpg does not have a valid color code mapping.",
+        )
 
     async def test_상품_상태_업데이트(self) -> None:
         # Given

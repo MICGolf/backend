@@ -363,7 +363,9 @@ class TestUserService(TestCase):
     async def test_만료된_access_token_검증(self, mock_jwt_expiry_seconds: AsyncMock) -> None:
         # Given
         token = await self.user_service.auth_service.generate_access_token(
-            user_id=self.user_1.id, user_name=self.user_1.name, user_type=self.user_1.user_type
+            user_id=self.user_1.id,
+            user_name=self.user_1.name,
+            user_type=self.user_1.user_type,
         )
 
         headers = {
@@ -386,7 +388,9 @@ class TestUserService(TestCase):
     async def test_refresh_token_발급_성공(self) -> None:
         # Given
         token = await self.user_service.auth_service.generate_access_token(
-            user_id=self.user_1.id, user_name=self.user_1.name, user_type=self.user_1.user_type
+            user_id=self.user_1.id,
+            user_name=self.user_1.name,
+            user_type=self.user_1.user_type,
         )
         login_data = {
             "login_id": "hong1",
@@ -419,7 +423,9 @@ class TestUserService(TestCase):
     async def test_refresh_token_만료_발급_실패(self, mock_refresh_expiry_seconds: AsyncMock) -> None:
         # Given
         token = await self.user_service.auth_service.generate_access_token(
-            user_id=self.user_1.id, user_name=self.user_1.name, user_type=self.user_1.user_type
+            user_id=self.user_1.id,
+            user_name=self.user_1.name,
+            user_type=self.user_1.user_type,
         )
         login_data = {
             "login_id": "hong1",

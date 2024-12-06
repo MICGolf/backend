@@ -25,7 +25,11 @@ class WebhookService:
             message = json.dumps(webhook_data, sort_keys=True)
 
             # HMAC-SHA256 서명 생성
-            hmac_obj = hmac.new(self.config.WEBHOOK_SECRET.encode("utf-8"), message.encode("utf-8"), hashlib.sha256)
+            hmac_obj = hmac.new(
+                self.config.WEBHOOK_SECRET.encode("utf-8"),
+                message.encode("utf-8"),
+                hashlib.sha256,
+            )
             calculated_signature = hmac_obj.hexdigest()
 
             # 시그니처 비교

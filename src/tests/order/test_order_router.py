@@ -17,14 +17,19 @@ class TestOrderRouter(TestCase):
         await super().asyncSetUp()
         # 테스트용 상품 생성
         self.test_product = await Product.create(
-            name="Test Product", price=Decimal("85000"), origin_price=Decimal("100000"), product_code="TEST001"
+            name="Test Product",
+            price=Decimal("85000"),
+            origin_price=Decimal("100000"),
+            product_code="TEST001",
         )
 
         # 테스트용 옵션 생성
         self.test_option = await Option.create(product=self.test_product, size="M", color="Red", color_code="#FF0000")
 
         self.test_stock = await CountProduct.create(
-            product=self.test_product, option=self.test_option, count=10  # 초기 재고 10개
+            product=self.test_product,
+            option=self.test_option,
+            count=10,  # 초기 재고 10개
         )
 
         # 테스트용 주문 생성
@@ -52,10 +57,15 @@ class TestOrderRouter(TestCase):
         assert order.phone == "01012345678"
 
         # When
-        verification_data = {"order_number": f"ORD-{self.test_order.pk}", "phone": "01012345678"}
+        verification_data = {
+            "order_number": f"ORD-{self.test_order.pk}",
+            "phone": "01012345678",
+        }
         async with AsyncClient(app=app, base_url="http://test") as ac:
             response = await ac.post(
-                "/api/v1/order/verify", headers={"Accept": "application/json"}, json=verification_data
+                "/api/v1/order/verify",
+                headers={"Accept": "application/json"},
+                json=verification_data,
             )
 
         # Then
@@ -72,7 +82,12 @@ class TestOrderRouter(TestCase):
             "detail_address": "Detail Address",
             "request": "Test Request",
             "products": [
-                {"product_id": self.test_product.id, "option_id": self.test_option.id, "quantity": 1, "price": "85000"}
+                {
+                    "product_id": self.test_product.id,
+                    "option_id": self.test_option.id,
+                    "quantity": 1,
+                    "price": "85000",
+                }
             ],
         }
 
@@ -88,12 +103,17 @@ class TestOrderRouter(TestCase):
 
     async def test_verify_order_with_wrong_phone(self) -> None:
         # Given
-        verification_data = {"order_number": f"ORD-{self.test_order.pk}", "phone": "01000000000"}  # 잘못된 전화번호
+        verification_data = {
+            "order_number": f"ORD-{self.test_order.pk}",
+            "phone": "01000000000",
+        }  # 잘못된 전화번호
 
         # When
         async with AsyncClient(app=app, base_url="http://test") as ac:
             response = await ac.post(
-                "/api/v1/order/verify", headers={"Accept": "application/json"}, json=verification_data
+                "/api/v1/order/verify",
+                headers={"Accept": "application/json"},
+                json=verification_data,
             )
 
         # Then
@@ -110,7 +130,9 @@ class TestOrderRouter(TestCase):
         # When
         async with AsyncClient(app=app, base_url="http://test") as ac:
             response = await ac.put(
-                "/api/v1/order/shipping", headers={"Accept": "application/json"}, json=shipping_data
+                "/api/v1/order/shipping",
+                headers={"Accept": "application/json"},
+                json=shipping_data,
             )
 
         # Then
@@ -125,7 +147,9 @@ class TestOrderRouter(TestCase):
         # When
         async with AsyncClient(app=app, base_url="http://test") as ac:
             response = await ac.put(
-                "/api/v1/order/batch-status", headers={"Accept": "application/json"}, json=batch_data
+                "/api/v1/order/batch-status",
+                headers={"Accept": "application/json"},
+                json=batch_data,
             )
         # Then
         assert response.status_code == 200
@@ -170,7 +194,9 @@ class TestOrderRouter(TestCase):
         # When
         async with AsyncClient(app=app, base_url="http://test") as ac:
             response = await ac.get(
-                "/api/v1/order/search", headers={"Accept": "application/json"}, params=search_params
+                "/api/v1/order/search",
+                headers={"Accept": "application/json"},
+                params=search_params,
             )
 
         # Then
@@ -236,7 +262,9 @@ class TestOrderRouter(TestCase):
         # When - PENDING 상태만 검색
         async with AsyncClient(app=app, base_url="http://test") as ac:
             response = await ac.get(
-                "/api/v1/order/search", headers={"Accept": "application/json"}, params={"order_status": "PENDING"}
+                "/api/v1/order/search",
+                headers={"Accept": "application/json"},
+                params={"order_status": "PENDING"},
             )
 
         # Then
