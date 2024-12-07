@@ -68,7 +68,8 @@ class TestCartService(TestCase):
         assert response.total_count == 2
         assert len(response.items) == 1
         assert response.items[0].product_name == "Test Product"
-        assert response.items[0].option_id == self.option.id
+        assert response.items[0].product_color == "Red"
+        assert response.items[0].product_size == "M"
 
     async def test_get_cart_empty(self) -> None:
         # When & Then
@@ -83,14 +84,16 @@ class TestCartService(TestCase):
         response = await CartService.add_to_cart(
             user_id=self.user.id,
             product_id=self.product.id,
-            option_id=self.option.id,
+            color="Red",
+            size="M",
             product_count=1,
         )
 
         # Then
         assert response.product_name == "Test Product"
         assert response.product_amount == 1
-        assert response.option_id == self.option.id
+        assert response.product_color == "Red"
+        assert response.product_size == "M"
 
     async def test_add_to_cart_stock_exceeded(self) -> None:
         # When & Then
@@ -98,7 +101,8 @@ class TestCartService(TestCase):
             await CartService.add_to_cart(
                 user_id=self.user.id,
                 product_id=self.product.id,
-                option_id=self.option.id,
+                color="Red",
+                size="M",
                 product_count=100,
             )
         except HTTPException as e:
@@ -108,17 +112,15 @@ class TestCartService(TestCase):
     async def test_add_to_cart_user_cart_already_exists(self) -> None:
         # Given
         cart = await Cart.create(
-            user_id=self.user.id,
-            product_id=self.product.id,
-            option_id=self.option.id,
-            product_count=2,
+            user_id=self.user.id, product_id=self.product.id, option_id=self.option.id, product_count=2
         )
 
         # When
         response = await CartService.add_to_cart(
             user_id=self.user.id,
             product_id=self.product.id,
-            option_id=self.option.id,
+            color=self.option.color,
+            size=self.option.size,
             product_count=1,
         )
 
@@ -129,19 +131,15 @@ class TestCartService(TestCase):
 
     async def test_add_to_cart_user_cart_exceed_stock(self) -> None:
         # Given
-        await Cart.create(
-            user_id=self.user.id,
-            product_id=self.product.id,
-            option_id=self.option.id,
-            product_count=48,
-        )
+        await Cart.create(user_id=self.user.id, product_id=self.product.id, option_id=self.option.id, product_count=48)
 
         # When & Then
         try:
             await CartService.add_to_cart(
                 user_id=self.user.id,
                 product_id=self.product.id,
-                option_id=self.option.id,
+                color=self.option.color,
+                size=self.option.size,
                 product_count=5,
             )
         except HTTPException as e:

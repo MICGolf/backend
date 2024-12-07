@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Body, Depends, status
 
-from app.cart.dtos.cart_request import CartItemRequest
+from app.cart.dtos.cart_request import CartItemAddRequest, CartItemRequest
 from app.cart.dtos.cart_response import CartItemResponse, CartResponse
 from app.cart.services.cart_services import CartService
 from app.user.services.auth_service import AuthenticateService
@@ -20,7 +20,7 @@ async def get_cart(
 
 @router.post("/", response_model=CartItemResponse, summary="장바구니에 상품 추가")
 async def add_to_cart(
-    cart_item: CartItemRequest,
+    cart_item: CartItemAddRequest,
     user_id: int = Depends(AuthenticateService().get_user_id),
 ) -> CartItemResponse:
     """
@@ -29,7 +29,8 @@ async def add_to_cart(
     return await CartService.add_to_cart(
         user_id=user_id,
         product_id=cart_item.product_id,
-        option_id=cart_item.option_id,
+        color=cart_item.color,
+        size=cart_item.size,
         product_count=cart_item.product_count,
     )
 

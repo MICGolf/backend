@@ -59,16 +59,16 @@ class CartService:
         )
 
     @staticmethod
-    async def add_to_cart(user_id: int, product_id: int, option_id: int, product_count: int = 1) -> CartItemResponse:
-        # Option을 조회
-        option = await Option.get(id=option_id)
+    async def add_to_cart(
+        user_id: int, product_id: int, color: str, size: str, product_count: int = 1
+    ) -> CartItemResponse:
+        # 주어진 color와 size로 option을 조회
+        option, stock_count = await Option.get_option_with_stock(product_id, color, size)
 
         # 재고 초과 확인
-        stock = await CountProduct.filter(option_id=option_id, product_id=product_id).first()
-        if not stock or product_count > stock.count:
+        if product_count > stock_count:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Requested quantity exceeds available stock.",
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Requested quantity exceeds available stock."
             )
 
         # 유저 장바구니에서 동일한 상품과 옵션이 있는지 확인
@@ -80,7 +80,7 @@ class CartService:
 
         # 해당 장바구니에 동일한 상품과 옵션이 있을 때 (수량 업데이트)
         if user_cart:
-            if user_cart.product_count + product_count > stock.count:
+            if user_cart.product_count + product_count > stock_count:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Requested quantity exceeds available stock.",
@@ -100,7 +100,7 @@ class CartService:
                 product_color=user_cart.option.color,
                 product_size=user_cart.option.size,
                 product_amount=user_cart.product_count,
-                product_stock=stock.count,
+                product_stock=stock_count,
                 origin_price=user_cart.product.origin_price,
                 price=float(user_cart.product.price),
                 discount=user_cart.product.discount,
@@ -126,7 +126,7 @@ class CartService:
             product_color=new_cart.option.color,
             product_size=new_cart.option.size,
             product_amount=new_cart.product_count,
-            product_stock=stock.count,
+            product_stock=stock_count,
             origin_price=new_cart.product.origin_price,
             price=float(new_cart.product.price),
             discount=new_cart.product.discount,
