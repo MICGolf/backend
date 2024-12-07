@@ -26,7 +26,7 @@ async def webhook(request: Request) -> dict[str, str]:
                 capture_output=True,
                 text=True,
             )
-            pid = result.stdout.strip().splitlines()[0]     # 첫번째 PID 가져오기
+            pid = result.stdout.strip().splitlines()[0]  # 첫번째 PID 가져오기
 
             # HUP 신호 보내기
             subprocess.run(["kill", "-HUP", pid], check=True)
