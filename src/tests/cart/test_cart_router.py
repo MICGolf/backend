@@ -103,7 +103,8 @@ class TestCartRouter(TestCase):
         mock_token = generate_mock_jwt({"user_id": self.user.id}, secret_key="your-jwt-secret-key")
         cart_item = {
             "product_id": self.product.id,
-            "option_id": self.option.id,
+            "color": "Red",
+            "size": "M",
             "product_count": 2,
         }
 
