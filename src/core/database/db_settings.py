@@ -10,6 +10,7 @@ TORTOISE_MODELS = [
     "app.cart.models.cart",
     "app.category.models.category",
     "app.order.models.order",
+    "app.order.models.payment",
     "app.product.models.product",
     "app.promotion_product.models.promotion_product",
     "aerich.models",
