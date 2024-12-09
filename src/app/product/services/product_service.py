@@ -100,7 +100,7 @@ class ProductService:
                     "sizes": [],
                 }
 
-            color_options_map[option.color_code]["sizes"].append({"size": option.size, "stock": option.stock})  # type: ignore[attr-defined]
+            color_options_map[option.color_code]["sizes"].append({"id": option.id, "size": option.size, "stock": option.stock})  # type: ignore[attr-defined]
 
         return [OptionDTO.model_validate(color) for color in color_options_map.values()]
 

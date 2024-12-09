@@ -10,6 +10,7 @@ class OptionImageDTO(BaseModel):
 
 
 class OptionSizeDTO(BaseModel):
+    id: int
     size: str
     stock: int
 
