@@ -19,11 +19,11 @@ class NonUserOrder(BaseModel):
 
     id = fields.IntField(pk=True)
     name = fields.CharField(max_length=100)
-    email = fields.CharField(max_length=255)
     phone = fields.CharField(max_length=20)
     shipping_address = fields.CharField(max_length=255)
     detail_address = fields.CharField(max_length=255)
     request = fields.TextField(null=True)
+    email = fields.CharField(max_length=255)
     amount = fields.DecimalField(max_digits=10, decimal_places=2)
     # status = fields.CharEnumField(OrderStatus, default=OrderStatus.PENDING)
 
