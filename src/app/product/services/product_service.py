@@ -116,7 +116,7 @@ class ProductService:
         image_mapping = product_create_dto.image_mapping
         category_id = product_create_dto.category_id
 
-        await cls._validate_images(files, image_mapping)
+        # await cls._validate_images(files, image_mapping)
 
         product, category = await asyncio.gather(
             Product.create(**product_dto.model_dump()),
