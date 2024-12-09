@@ -1,18 +1,22 @@
 import asyncio
 import uuid
 from decimal import Decimal
-from typing import List
+from typing import Dict, List
 
 from fastapi import HTTPException
 from tortoise.expressions import F
 
 from app.order.dtos.order_request import (
     BatchOrderStatusRequest,
+    BatchUpdatePurchaseStatusRequest,
+    BatchUpdateShippingStatusRequest,
     CreateOrderRequest,
     OrderClaimRequest,
     OrderSearchRequest,
     OrderVerificationRequest,
+    PageType,
     PurchaseOrderRequest,
+    SellerCancelRequest,
     UpdateOrderRequest,
     UpdatePurchaseStatusRequest,
     UpdateShippingRequest,
@@ -23,6 +27,7 @@ from app.order.dtos.order_response import (
     OrderResponse,
     OrderSearchResponse,
     OrderStatisticsResponse,
+    PaginatedOrderResponse,
     ProductOptionResponse,
     ShippingStatusResponse,
     StockCheckResponse,
@@ -31,6 +36,12 @@ from app.order.dtos.order_response import (
 )
 from app.order.models.order import NonUserOrder, NonUserOrderProduct
 from app.product.models.product import CountProduct, Option, Product
+
+PAGE_STATUS_MAP: Dict[PageType, List[str]] = {
+    PageType.UNPAID: ["UNPAID"],  # 미결제 상태
+    PageType.PROCUREMENT: ["ITEM_PENDING", "POSTPONE", "CONFIRMED"],  # 발주대기, 발주지연, 발주확인
+    PageType.SHIPPING: ["SHIPPING", "DELIVERED", "WAITING", "DELAYED"],  # 배송중, 배송완료, 배송대기, 배송지연
+}
 
 
 class OrderService:
@@ -117,6 +128,7 @@ class OrderService:
             shipping_address=request.shipping_address,
             detail_address=request.detail_address,
             request=request.request,
+            current_status=request.current_status,
         )
 
         # 주문 상품 생성
@@ -162,6 +174,7 @@ class OrderService:
                     tracking_number=p.shipping_id,
                     shipping_status=p.current_status,
                     procurement_status=p.procurement_status,
+                    current_status=p.current_status,  # current_status 추가
                 )
             )
         shipping_status = ShippingStatusResponse(
@@ -300,8 +313,8 @@ class OrderService:
         if search_params.order_status:
             query = query.filter(order_product__current_status=search_params.order_status)
 
-        if search_params.payment_status:  # type: ignore
-            query = query.filter(payment__payment_status=search_params.payment_status)  # type: ignore
+        if search_params.payment_status:
+            query = query.filter(payment__payment_status=search_params.payment_status)
 
         skip = (page - 1) * limit
         orders = await query.offset(skip).limit(limit).prefetch_related("order_product__product", "payment")
@@ -380,7 +393,9 @@ class OrderService:
     async def get_order_statistics() -> OrderStatisticsResponse:
         total = await NonUserOrder.all().count()
 
-        # 상태별 주문 수 집계
+        # 발주 상태별 주문 수 집계
+        new_orders = await NonUserOrderProduct.filter(procurement_status="PENDING").count()
+        confirmed_orders = await NonUserOrderProduct.filter(procurement_status="CONFIRMED").count()
         pending = await NonUserOrderProduct.filter(current_status="PENDING").count()
         shipping = await NonUserOrderProduct.filter(current_status="SHIPPING").count()
         completed = await NonUserOrderProduct.filter(current_status="COMPLETED").count()
@@ -388,6 +403,8 @@ class OrderService:
 
         return OrderStatisticsResponse(
             total_orders=total,
+            new_orders=new_orders,
+            confirmed_orders=confirmed_orders,
             pending_orders=pending,
             shipping_orders=shipping,
             completed_orders=completed,
@@ -422,6 +439,22 @@ class OrderService:
         return await OrderService.get_order(request.order_id)
 
     @staticmethod
+    async def batch_update_purchase_status(request: BatchUpdatePurchaseStatusRequest) -> List[OrderResponse]:
+        responses = []
+        for order_id in request.order_ids:
+            order_product = await NonUserOrderProduct.get_or_none(order_id=order_id)
+            if not order_product:
+                raise HTTPException(status_code=404, detail=f"Order {order_id} not found")
+
+            order_product.procurement_status = request.purchase_status
+            await order_product.save()
+
+            response = await OrderService.get_order(order_id)
+            responses.append(response)
+
+        return responses
+
+    @staticmethod
     async def advanced_search(request: OrderSearchRequest) -> OrderSearchResponse:
         query = NonUserOrder.all()
 
@@ -444,31 +477,198 @@ class OrderService:
         if request.claim_status:
             query = query.filter(order_product__current_status=request.claim_status)
 
+        if request.payment_status:
+            query = query.filter(payment__payment_status=request.payment_status)  # payment 관계를 통해 필터링
+
         # 정렬
         if request.sort_by:
             direction = "" if request.sort_direction == "asc" else "-"
             query = query.order_by(f"{direction}{request.sort_by}")
 
         # 페이징 처리
-        total = await query.count()
         skip = (request.page - 1) * request.limit
-        orders = await query.offset(skip).limit(request.limit)
+        orders = (
+            await query.offset(skip)
+            .limit(request.limit)
+            .prefetch_related("order_product__product", "order_product__product__options")
+        )
 
-        # 각 주문에 대해 OrderResponse 생성
+        # total을 상품 주문번호 기준으로 계산
+        order_ids = [order.pk for order in await query.all()]  # 모든 주문 ID 가져오기
+        total_products = await NonUserOrderProduct.filter(order_id__in=order_ids).count()
+
         order_responses = []
         for order in orders:
-            # get_order 메서드 재사용
-            order_response = await OrderService.get_order(order.pk)
-            order_responses.append(order_response)
+            order_products = []
+            for p in order.order_product:  # type: ignore
+                # 옵션과 클레임 정보 조회
+                options = p.product.options
+                option = next((opt for opt in options if opt.id == p.option_id), None)
+                order_products.append(
+                    OrderProductResponse(
+                        id=p.id,
+                        product_id=p.product_id,
+                        product_name=p.product.name,
+                        quantity=p.quantity,
+                        price=p.price,
+                        option=(
+                            ProductOptionResponse(
+                                size=option.size,
+                                color=option.color,
+                                color_code=option.color_code,
+                                price=p.product.price,
+                            )
+                            if option
+                            else None
+                        ),
+                        courier=p.courier,
+                        tracking_number=p.shipping_id,
+                        shipping_status=p.current_status,
+                        current_status=p.current_status,
+                        procurement_status=p.procurement_status,
+                        claim_status=p.claim_status if hasattr(p, "claim_status") else None,
+                    )
+                )
+
+            order_responses.append(
+                OrderResponse(
+                    id=order.pk,
+                    order_number=f"ORD-{order.pk}",
+                    name=order.name,
+                    phone=order.phone,
+                    shipping_address=order.shipping_address,
+                    detail_address=order.detail_address,
+                    request=order.request,
+                    total_amount=sum(p.price * p.quantity for p in order.order_product),  # type: ignore
+                    order_status=order_products[0].shipping_status if order_products else "PENDING",
+                    created_at=order.created_at,
+                    updated_at=order.updated_at,
+                    products=order_products,
+                    payment=None,
+                    shipping=ShippingStatusResponse(
+                        status="PENDING", courier="", tracking_number="", updated_at=order.updated_at
+                    ),
+                )
+            )
 
         return OrderSearchResponse(
             orders=order_responses,
             search_params=request,
-            total=total,
+            total=total_products,  # 상품 주문번호 기준 total
             page=request.page,
             limit=request.limit,
-            total_pages=(total + request.limit - 1) // request.limit,
+            total_pages=(total_products + request.limit - 1) // request.limit,
         )
+
+    # service에 추가
+
+    @staticmethod
+    async def handle_seller_cancel(request: SellerCancelRequest) -> OrderResponse:
+        order_product = await NonUserOrderProduct.get_or_none(order_id=request.order_id)
+        if not order_product:
+            raise HTTPException(status_code=404, detail="Order not found")
+
+        # 발주확인 전인지 확인
+        if order_product.procurement_status == "CONFIRMED":
+            raise HTTPException(status_code=400, detail="Cannot cancel order after procurement confirmation")
+
+        order_product.current_status = "CANCELLED"
+        order_product.procurement_status = "CANCELLED"
+        await order_product.save()
+
+        return await OrderService.get_order(request.order_id)
+
+    @staticmethod
+    async def batch_update_shipping_status(request: BatchUpdateShippingStatusRequest) -> List[OrderResponse]:
+        responses = []
+        for order_id in request.order_ids:
+            order_product = await NonUserOrderProduct.get_or_none(order_id=order_id)
+            if not order_product:
+                raise HTTPException(status_code=404)
+
+            order_product.current_status = request.shipping_status
+            await order_product.save()
+
+            response = await OrderService.get_order(order_id)
+            responses.append(response)
+
+        return responses
+
+    from app.product.models.product import Option  # Option 모델 import
+
+    @staticmethod
+    async def get_orders_by_page_type(page_type: PageType) -> List[OrderResponse]:
+        query = NonUserOrder.all()
+
+        # PAGE_STATUS_MAP에 따라 current_status로 필터링
+        statuses = PAGE_STATUS_MAP.get(page_type, [])
+        if page_type == PageType.UNPAID:
+            query = query.filter(order_product__current_status__in=statuses)
+        elif page_type == PageType.PROCUREMENT:
+            # 발주 대기 상태
+            query = query.filter(order_product__current_status__in=statuses)
+        elif page_type == PageType.SHIPPING:
+            # 배송 관련 상태
+            query = query.filter(order_product__current_status__in=statuses)
+        else:
+            raise HTTPException(status_code=400, detail="Invalid page type")
+
+        # 관련 데이터를 미리 로드
+        orders = await query.prefetch_related("order_product__product", "payment")
+
+        # OrderResponse로 변환
+        order_responses = []
+        for order in orders:
+            products = []
+            for op in order.order_product:  # type: ignore
+                option = await Option.get_or_none(id=op.option_id)  # Option 객체를 가져옴
+                products.append(
+                    OrderProductResponse(
+                        id=op.id,
+                        product_id=op.product.id,
+                        product_name=op.product.name,
+                        quantity=op.quantity,
+                        price=op.price,
+                        option=ProductOptionResponse(
+                            size=option.size if option and option.size else "N/A",  # 기본값 설정
+                            color=option.color if option and option.color else "N/A",  # 기본값 설정
+                            color_code=option.color_code if option else None,
+                            price=op.product.price,
+                        ),
+                        courier=op.courier,
+                        tracking_number=op.shipping_id,
+                        current_status=op.current_status,
+                        procurement_status=op.procurement_status,
+                        claim_status=getattr(op, "claim_status", None),
+                        payment_status=getattr(op, "payment_status", None),
+                    )
+                )
+
+            order_responses.append(
+                OrderResponse(
+                    id=order.pk,
+                    order_number=f"ORD-{order.pk}",
+                    name=order.name,
+                    phone=order.phone,
+                    shipping_address=order.shipping_address,
+                    detail_address=order.detail_address,
+                    request=order.request,
+                    total_amount=sum(p.price * p.quantity for p in order.order_product),  # type: ignore
+                    order_status=order.order_product[0].current_status if order.order_product else "PENDING",  # type: ignore
+                    created_at=order.created_at,
+                    updated_at=order.updated_at,
+                    products=products,
+                    payment=None,  # Payment 정보가 있으면 추가
+                    shipping=ShippingStatusResponse(
+                        status=order.order_product[0].current_status if order.order_product else "PENDING",  # type: ignore
+                        courier="",
+                        tracking_number="",
+                        updated_at=order.updated_at,
+                    ),
+                )
+            )
+
+        return order_responses
 
     # @staticmethod
     # async def verify_admin(admin_key: str) -> bool:

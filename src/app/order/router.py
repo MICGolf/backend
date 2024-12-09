@@ -6,11 +6,16 @@ from fastapi import APIRouter, Body, Depends, HTTPException, Path, Query
 
 from app.order.dtos.order_request import (
     BatchOrderStatusRequest,
+    BatchUpdatePurchaseStatusRequest,
+    BatchUpdateShippingStatusRequest,
+    BulkUpdateShippingRequest,
     CreateOrderRequest,
     OrderClaimRequest,
     OrderSearchRequest,
     OrderVerificationRequest,
+    PageType,
     PurchaseOrderRequest,
+    SellerCancelRequest,
     UpdateOrderRequest,
     UpdateOrderStatusRequest,
     UpdatePurchaseStatusRequest,
@@ -191,7 +196,12 @@ async def handle_order_claim(request: OrderClaimRequest = Body(...)) -> OrderRes
 async def update_purchase_status(
     request: UpdatePurchaseStatusRequest = Body(...),
 ) -> OrderResponse:
-    return await OrderService.update_purchase_status(request)
+    return await OrderService.update_purchase_status(request)  # 상품별로 처리할 수 있게
+
+
+@router.put("/batch-purchase-status", response_model=OrderResponse)
+async def batch_update_purchase_status(request: BatchUpdatePurchaseStatusRequest = Body(...)) -> List[OrderResponse]:
+    return await OrderService.batch_update_purchase_status(request)
 
 
 @router.get(
@@ -215,3 +225,41 @@ async def check_stock(
 )
 async def update_order(order_id: int, request: UpdateOrderRequest) -> OrderResponse:
     return await OrderService.update_order(order_id, request)
+
+
+@router.put("/delay-shipping", response_model=OrderResponse)
+async def delay_shipping(request: UpdatePurchaseStatusRequest = Body(...)) -> OrderResponse:
+    request.purchase_status = "DELAYED"  # 강제로 DELAYED로 설정
+    return await OrderService.update_purchase_status(request)
+
+
+@router.post("/seller-cancel", response_model=OrderResponse)
+async def seller_cancel(request: SellerCancelRequest = Body(...)) -> OrderResponse:
+    return await OrderService.handle_seller_cancel(request)
+
+
+@router.put("/bulk-shipping", response_model=List[ShippingStatusResponse])
+async def bulk_update_shipping_info(request: BulkUpdateShippingRequest = Body(...)) -> List[ShippingStatusResponse]:
+    responses = []
+    for shipping_request in request.order_products:
+        response = await OrderService.update_shipping_info(shipping_request)
+        responses.append(response)
+    return responses
+
+
+@router.put("/batch-shipping-status", response_model=List[OrderResponse])
+async def batch_update_shipping_status(request: BatchUpdateShippingStatusRequest = Body(...)) -> List[OrderResponse]:
+    return await OrderService.batch_update_shipping_status(request)
+
+
+@router.get("/page/{page_type}", response_model=List[OrderResponse])
+async def get_orders_by_page_type(page_type: PageType) -> List[OrderResponse]:
+    return await OrderService.get_orders_by_page_type(page_type)
+
+
+# 전체 주문의 리스트 조회
+# 상품 주문번호 중심
+# 주문통합 전체
+# 미결제 결제안한거
+# 발주확인 결제된 발송전
+# 배송현황 발송처리 이후

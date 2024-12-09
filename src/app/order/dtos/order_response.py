@@ -25,6 +25,9 @@ class OrderProductResponse(BaseModel):
     tracking_number: Optional[str] = None
     shipping_status: Optional[str] = None
     procurement_status: Optional[str] = None
+    claim_status: Optional[str] = None
+    payment_status: Optional[str] = None
+    current_status: Optional[str]  # 추가
 
 
 class PaymentResponse(BaseModel):
@@ -65,7 +68,9 @@ class OrderResponse(BaseModel):
 
 class OrderStatisticsResponse(BaseModel):
     total_orders: int
-    pending_orders: int
+    new_orders: int  # 발주확인 처리 전
+    confirmed_orders: int  # 발주확인 처리 후
+    pending_orders: int  # 처리 대기 중
     shipping_orders: int
     completed_orders: int
     cancelled_orders: int
@@ -109,3 +114,11 @@ class StockCheckResponse(BaseModel):
 class PurchaseOrderResponse(BaseModel):
     order: OrderResponse
     stock_check: StockCheckResponse
+
+
+class PaginatedOrderResponse(BaseModel):
+    orders: List[OrderResponse]  # 주문 목록
+    total: int  # 총 주문 수
+    page: int  # 현재 페이지
+    limit: int  # 페이지 당 결과 수
+    total_pages: int  # 총 페이지 수

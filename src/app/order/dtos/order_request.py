@@ -1,10 +1,17 @@
 # dtos/order_request.py
 from datetime import datetime
 from decimal import Decimal
+from enum import Enum
 from typing import List, Optional
 
 from fastapi import Query
 from pydantic import BaseModel, EmailStr, Field, conlist
+
+
+class PageType(str, Enum):
+    UNPAID = "UNPAID"  # 결제 전 상태
+    PROCUREMENT = "PENDING"  # 발주 관련 상태
+    SHIPPING = "SHIPPING"  # 배송 관련 상태
 
 
 class OrderProductRequest(BaseModel):
@@ -19,6 +26,7 @@ class CreateOrderRequest(BaseModel):
     phone: str = Field(..., min_length=10, max_length=20, description="연락처")
     shipping_address: str = Field(..., min_length=1, max_length=255, description="배송지 주소")
     detail_address: Optional[str] = Field(None, max_length=255, description="상세 주소")
+    current_status: Optional[str] = "UNPAID"  # 기본값 추가
     request: Optional[str] = Field(None, description="배송 요청사항")
     products: List[OrderProductRequest] = Field(..., min_items=1, description="주문 상품 목록")  # type: ignore
 
@@ -61,6 +69,7 @@ class OrderSearchRequest(BaseModel):
     sort_direction: Optional[str] = Query("desc")
     page: int = Field(1, ge=1)
     limit: int = Field(10, ge=1, le=100)
+    payment_status: Optional[str] = None
 
 
 class BatchOrderStatusRequest(BaseModel):
@@ -70,8 +79,6 @@ class BatchOrderStatusRequest(BaseModel):
 
 class PurchaseOrderRequest(BaseModel):
     order_id: int = Field(..., description="주문 ID")
-    purchase_number: str = Field(..., description="발주 번호")
-    purchase_date: datetime = Field(..., description="발주 일자")
     status: str = Field("CONFIRMED", description="발주 상태")
 
 
@@ -94,6 +101,12 @@ class UpdatePurchaseStatusRequest(BaseModel):
     memo: Optional[str] = None
 
 
+# order_request.py
+class BatchUpdatePurchaseStatusRequest(BaseModel):
+    order_ids: List[int] = Field(..., description="주문 ID 목록")
+    purchase_status: str = Field(..., description="발주 상태")
+
+
 # order_request.py에 추가
 class UpdateOrderRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=255, description="주문자 이름")
@@ -101,3 +114,17 @@ class UpdateOrderRequest(BaseModel):
     shipping_address: str = Field(..., min_length=1, max_length=255, description="배송지 주소")
     detail_address: Optional[str] = Field(None, max_length=255, description="상세 주소")
     request: Optional[str] = Field(None, description="배송 요청사항")
+
+
+class SellerCancelRequest(BaseModel):
+    order_id: int = Field(..., description="주문 ID")
+    cancel_reason: str = Field(..., description="취소 사유")
+
+
+class BatchUpdateShippingStatusRequest(BaseModel):
+    order_ids: List[int] = Field(..., description="주문 ID 목록")
+    shipping_status: str = Field(..., description="배송 상태")
+
+
+class BulkUpdateShippingRequest(BaseModel):
+    order_products: List[UpdateShippingRequest] = Field(..., description="송장 정보 목록")
