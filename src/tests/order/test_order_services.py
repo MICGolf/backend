@@ -8,6 +8,7 @@ from app.order.dtos.order_request import (
     CreateOrderRequest,
     OrderProductRequest,
     OrderVerificationRequest,
+    PageType,
     UpdateShippingRequest,
 )
 from app.order.models.order import NonUserOrder, NonUserOrderProduct
@@ -44,6 +45,7 @@ class TestOrderServices(TestCase):
             shipping_address="Test Address",
             detail_address="Detail Address",
             request="Test Request",
+            current_status="UNPAID",
             products=[
                 OrderProductRequest(
                     product_id=self.test_product.id,
@@ -182,3 +184,63 @@ class TestOrderServices(TestCase):
 
         # Then
         assert result.is_owner == False
+
+    async def test_get_orders_by_page_type_service(self) -> None:
+        # Given
+        # PROCUREMENT 상태의 주문 생성
+        procurement_order = await NonUserOrder.create(
+            name="Procurement User", phone="01012345678", shipping_address="Procurement Address"
+        )
+        await NonUserOrderProduct.create(
+            order=procurement_order,
+            product=self.test_product,
+            option_id=self.test_option.id,
+            quantity=1,
+            price=Decimal("85000"),
+            current_status="ITEM_PENDING",
+        )
+
+        # SHIPPING 상태의 주문 생성
+        shipping_order = await NonUserOrder.create(
+            name="Shipping User", phone="01087654321", shipping_address="Shipping Address"
+        )
+        await NonUserOrderProduct.create(
+            order=shipping_order,
+            product=self.test_product,
+            option_id=self.test_option.id,
+            quantity=1,
+            price=Decimal("85000"),
+            current_status="SHIPPING",
+        )
+
+        # UNPAID 상태의 주문 생성
+        unpaid_order = await NonUserOrder.create(
+            name="Unpaid User", phone="01055555555", shipping_address="Unpaid Address"
+        )
+        await NonUserOrderProduct.create(
+            order=unpaid_order,
+            product=self.test_product,
+            option_id=self.test_option.id,
+            quantity=1,
+            price=Decimal("85000"),
+            current_status="UNPAID",
+        )
+
+        # When & Then
+        # PROCUREMENT 상태 테스트
+        procurement_orders = await OrderService.get_orders_by_page_type(PageType.PROCUREMENT)
+        assert len(procurement_orders) == 1
+        assert procurement_orders[0].name == "Procurement User"
+        assert procurement_orders[0].products[0].current_status == "ITEM_PENDING"
+
+        # SHIPPING 상태 테스트
+        shipping_orders = await OrderService.get_orders_by_page_type(PageType.SHIPPING)
+        assert len(shipping_orders) == 1
+        assert shipping_orders[0].name == "Shipping User"
+        assert shipping_orders[0].products[0].current_status == "SHIPPING"
+
+        # UNPAID 상태 테스트
+        unpaid_orders = await OrderService.get_orders_by_page_type(PageType.UNPAID)
+        assert len(unpaid_orders) == 1
+        assert unpaid_orders[0].name == "Unpaid User"
+        assert unpaid_orders[0].products[0].current_status == "UNPAID"

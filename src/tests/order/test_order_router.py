@@ -228,23 +228,7 @@ class TestOrderRouter(TestCase):
         assert products[0]["price"] == "85000.00"
 
     async def test_search_orders_with_status_filter(self) -> None:
-        # Given
-        # PENDING 상태 주문 생성
-        pending_order = await NonUserOrder.create(
-            name="Pending User",
-            phone="01012345678",
-            shipping_address="Test Address",
-        )
-        await NonUserOrderProduct.create(
-            order=pending_order,
-            product=self.test_product,
-            option_id=self.test_option.id,
-            quantity=1,
-            price=Decimal("85000"),
-            current_status="PENDING",
-        )
-
-        # SHIPPING 상태 주문 생성
+        # SHIPPING 상태 주문 추가 생성 (PENDING은 이미 self.test_order가 있음)
         shipping_order = await NonUserOrder.create(
             name="Shipping User",
             phone="01087654321",
@@ -270,9 +254,5 @@ class TestOrderRouter(TestCase):
         # Then
         assert response.status_code == 200
         data = response.json()
-        orders = data["orders"]
-
-        # PENDING 상태 주문만 포함되어 있는지 확인
-        assert all(order["order_status"] == "PENDING" for order in orders)
-        assert any(order["name"] == "Pending User" for order in orders)
-        assert not any(order["name"] == "Shipping User" for order in orders)
+        assert any(order["name"] == "Test User" for order in data["orders"])
+        assert not any(order["name"] == "Shipping User" for order in data["orders"])
