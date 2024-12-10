@@ -155,7 +155,8 @@ class OrderService:
         products = []
         for p in order.order_product:  # type: ignore
             # p.option_id를 사용하여 해당 옵션을 직접 찾기
-            option = await Option.get(id=p.option_id)
+            options = p.product.options
+            option = next((opt for opt in options if opt.id == p.option_id), None)
             products.append(
                 OrderProductResponse(
                     id=p.id,
