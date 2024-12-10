@@ -214,7 +214,7 @@ GitHub Actions를 사용하여 코드가 원격 저장소에 푸시될 때마다
 ## 9.2 워크플로우 파일 위치
 - `.github/workflows/fastapi-ci.yml`
 
-# 9.3 CI/CD Detail
+## 9.3 CI/CD Detail
 > ### 1. 트리거 조건
 > - **Push 이벤트**: 코드가 저장소에 `push`될 때 자동 실행됩니다.
 >
