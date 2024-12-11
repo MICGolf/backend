@@ -10,6 +10,20 @@
 
 > `$ gunicorn -w 4 -k uvicorn.workers.UvicornWorker src.main:app`
 
+## 0-1. 랜딩페이지
+<img src=".github/images/랜딩페이지.gif" alt="랜딩페이지" width="700">
+
+## 0-2. 카카오 로그인
+<img src=".github/images/카카오로그인.gif" alt="카카오 로그인" width="700">
+
+## 0-3. 상품조회, 장바구니
+<img src=".github/images/상품조회장바구니.gif" alt="상품조회장바구니" width="700">
+
+## 0-4. 결제
+<img src=".github/images/결제고화질.gif" alt="결제" width="700">
+
+
+
 
 # 1. Project Overview (프로젝트 개요)
 
